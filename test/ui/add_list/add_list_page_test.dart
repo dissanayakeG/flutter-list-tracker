@@ -8,6 +8,19 @@ import 'package:flutter_application_3/ui/add_list/add_list_page.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
+  testWidgets('returns to Dashboard with the AppBar back action', (
+    tester,
+  ) async {
+    final repository = _RecordingRepository();
+
+    await _pumpAddListPage(tester, repository);
+
+    await tester.tap(find.byTooltip('Back to Dashboard'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Dashboard'), findsOneWidget);
+  });
+
   testWidgets('saves a list in a selected existing category', (tester) async {
     const reading = Category(id: 1, name: 'Reading');
     final repository = _RecordingRepository(categories: const [reading]);

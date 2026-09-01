@@ -5,6 +5,15 @@ import 'tables.dart';
 
 part 'app_database.g.dart';
 
+/*
+Look at these table classes:
+Categories, ListModels, Entries
+
+Then generate:
+app_database.g.dart
+*/
+
+
 @DriftDatabase(tables: [Categories, ListModels, Entries])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])

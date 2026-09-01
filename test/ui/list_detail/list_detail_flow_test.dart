@@ -35,6 +35,31 @@ void main() {
     expect(find.text('No entries yet.'), findsOneWidget);
   });
 
+  testWidgets('returns to parent screens with the AppBar back action', (
+    tester,
+  ) async {
+    final repository = _DetailRepository(summary: summary);
+
+    await _pumpApp(tester, repository, initialLocation: '/');
+
+    await tester.tap(find.text('Morning mobility'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Back to Dashboard'));
+    await tester.pumpAndSettle();
+
+    expect(find.byTooltip('Add new list'), findsOneWidget);
+
+    await tester.tap(find.text('Morning mobility'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('add-entry-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Back to List Detail'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Morning mobility'), findsOneWidget);
+    expect(find.byKey(const ValueKey('add-entry-button')), findsOneWidget);
+  });
+
   testWidgets('shows entries and saves a new one back to list detail', (
     tester,
   ) async {

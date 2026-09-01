@@ -37,7 +37,20 @@ class _AddListPageState extends ConsumerState<AddListPage> {
     final categories = ref.watch(categoriesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add New List')),
+      appBar: AppBar(
+        title: const Text('Add New List'),
+        leading: IconButton(
+          tooltip: 'Back to Dashboard',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
+          icon: const Icon(Icons.arrow_back),
+        ),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,

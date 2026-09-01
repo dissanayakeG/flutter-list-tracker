@@ -44,7 +44,7 @@ class ListTrackerApp extends StatelessWidget {
     return MaterialApp.router(
       title: 'List Tracker',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color.fromARGB(255, 6, 207, 221)),
         useMaterial3: true,
       ),
       routerConfig: _router,

@@ -15,7 +15,19 @@ class ListDetailPage extends ConsumerWidget {
     final listDetail = ref.watch(listDetailProvider(listId));
 
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        leading: IconButton(
+          tooltip: 'Back to Dashboard',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/');
+            }
+          },
+          icon: const Icon(Icons.arrow_back),
+        ),
+      ),
       body: listDetail.when(
         data: (summary) {
           if (summary == null) {

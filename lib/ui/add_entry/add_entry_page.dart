@@ -39,7 +39,20 @@ class _AddEntryPageState extends ConsumerState<AddEntryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_isEditing ? 'Edit Entry' : 'Add Entry')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Edit Entry' : 'Add Entry'),
+        leading: IconButton(
+          tooltip: 'Back to List Detail',
+          onPressed: () {
+            if (context.canPop()) {
+              context.pop();
+            } else {
+              context.go('/lists/${widget.listId}');
+            }
+          },
+          icon: const Icon(Icons.arrow_back),
+        ),
+      ),
       body: SafeArea(
         child: Form(
           key: _formKey,
