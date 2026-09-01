@@ -100,6 +100,12 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
     return Card(
       child: ListTile(
         title: Text(widget.entry.content),
+        subtitle: widget.entry.date == null
+            ? null
+            : Text(
+                MaterialLocalizations.of(context)
+                    .formatMediumDate(widget.entry.date!),
+              ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

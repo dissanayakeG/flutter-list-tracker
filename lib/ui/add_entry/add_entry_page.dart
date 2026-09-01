@@ -18,6 +18,7 @@ class AddEntryPage extends ConsumerStatefulWidget {
 class _AddEntryPageState extends ConsumerState<AddEntryPage> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _contentController;
+  DateTime? _selectedDate;
   bool _isSaving = false;
 
   bool get _isEditing => widget.entry != null;
@@ -26,6 +27,7 @@ class _AddEntryPageState extends ConsumerState<AddEntryPage> {
   void initState() {
     super.initState();
     _contentController = TextEditingController(text: widget.entry?.content);
+    _selectedDate = _dateOnly(widget.entry?.date);
   }
 
   @override
@@ -60,6 +62,13 @@ class _AddEntryPageState extends ConsumerState<AddEntryPage> {
                 validator: (value) => value == null || value.trim().isEmpty
                     ? 'Enter an entry.'
                     : null,
+              ),
+              const SizedBox(height: 16),
+              _DateField(
+                selectedDate: _selectedDate,
+                enabled: !_isSaving,
+                onSelectDate: _selectDate,
+                onClearDate: () => setState(() => _selectedDate = null),
               ),
               const SizedBox(height: 24),
               FilledButton.icon(
@@ -99,6 +108,7 @@ class _AddEntryPageState extends ConsumerState<AddEntryPage> {
         final wasUpdated = await repository.updateEntry(
           id: entry.id,
           content: _contentController.text,
+          date: _selectedDate,
         );
         if (!wasUpdated) {
           throw StateError('The entry no longer exists.');
@@ -107,6 +117,7 @@ class _AddEntryPageState extends ConsumerState<AddEntryPage> {
         await repository.createEntry(
           listId: widget.listId,
           content: _contentController.text,
+          date: _selectedDate,
         );
       }
       if (mounted) {
@@ -120,5 +131,76 @@ class _AddEntryPageState extends ConsumerState<AddEntryPage> {
         );
       }
     }
+  }
+
+  Future<void> _selectDate() async {
+    final now = DateTime.now();
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? now,
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2100),
+    );
+    if (selectedDate != null && mounted) {
+      setState(() => _selectedDate = _dateOnly(selectedDate));
+    }
+  }
+
+  DateTime? _dateOnly(DateTime? value) {
+    if (value == null) {
+      return null;
+    }
+    return DateUtils.dateOnly(value);
+  }
+}
+
+class _DateField extends StatelessWidget {
+  const _DateField({
+    required this.selectedDate,
+    required this.enabled,
+    required this.onSelectDate,
+    required this.onClearDate,
+  });
+
+  final DateTime? selectedDate;
+  final bool enabled;
+  final VoidCallback onSelectDate;
+  final VoidCallback onClearDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    final label = selectedDate == null
+        ? 'Select date (optional)'
+        : localizations.formatMediumDate(selectedDate!);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Date (optional)'),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                key: const ValueKey('entry-date-picker'),
+                onPressed: enabled ? onSelectDate : null,
+                icon: const Icon(Icons.calendar_today_outlined),
+                label: Text(label),
+              ),
+            ),
+            if (selectedDate != null) ...[
+              const SizedBox(width: 8),
+              IconButton(
+                key: const ValueKey('clear-entry-date'),
+                tooltip: 'Clear date',
+                onPressed: enabled ? onClearDate : null,
+                icon: const Icon(Icons.clear),
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
   }
 }

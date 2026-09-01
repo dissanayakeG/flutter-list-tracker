@@ -33,8 +33,16 @@ abstract interface class ListTrackerRepository {
   });
 
   Stream<List<Entry>> watchEntries(int listId);
-  Future<Entry> createEntry({required int listId, required String content});
-  Future<bool> updateEntry({required int id, required String content});
+  Future<Entry> createEntry({
+    required int listId,
+    required String content,
+    DateTime? date,
+  });
+  Future<bool> updateEntry({
+    required int id,
+    required String content,
+    required DateTime? date,
+  });
   Future<bool> deleteEntry(int id);
 }
 
@@ -148,6 +156,7 @@ class DriftListTrackerRepository implements ListTrackerRepository {
   Future<Entry> createEntry({
     required int listId,
     required String content,
+    DateTime? date,
   }) async {
     final id = await _database
         .into(_database.entries)
@@ -155,6 +164,7 @@ class DriftListTrackerRepository implements ListTrackerRepository {
           EntriesCompanion.insert(
             listId: listId,
             content: _requiredText(content, 'content'),
+            date: Value(_dateOnly(date)),
           ),
         );
     return (_database.select(
@@ -163,13 +173,18 @@ class DriftListTrackerRepository implements ListTrackerRepository {
   }
 
   @override
-  Future<bool> updateEntry({required int id, required String content}) async {
+  Future<bool> updateEntry({
+    required int id,
+    required String content,
+    required DateTime? date,
+  }) async {
     final updatedRows =
         await (_database.update(
           _database.entries,
         )..where((table) => table.id.equals(id))).write(
           EntriesCompanion(
             content: Value(_requiredText(content, 'content')),
+            date: Value(_dateOnly(date)),
             updatedAt: Value(DateTime.now()),
           ),
         );
@@ -217,5 +232,12 @@ class DriftListTrackerRepository implements ListTrackerRepository {
     return normalizedValue == null || normalizedValue.isEmpty
         ? null
         : normalizedValue;
+  }
+
+  DateTime? _dateOnly(DateTime? value) {
+    if (value == null) {
+      return null;
+    }
+    return DateTime(value.year, value.month, value.day);
   }
 }

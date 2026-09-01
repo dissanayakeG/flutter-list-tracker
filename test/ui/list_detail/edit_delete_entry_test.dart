@@ -23,7 +23,8 @@ void main() {
   testWidgets('edits a pre-filled entry and returns to List Detail', (
     tester,
   ) async {
-    final entry = _entry(id: 1, content: 'Stretch for ten minutes');
+    final date = DateTime(2026, 3, 15);
+    final entry = _entry(id: 1, content: 'Stretch for ten minutes', date: date);
     final repository = _EditableEntryRepository(
       summary: summary,
       entries: [entry],
@@ -36,6 +37,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Edit Entry'), findsOneWidget);
+    final localizations = MaterialLocalizations.of(
+      tester.element(find.byType(AddEntryPage)),
+    );
+    expect(find.text(localizations.formatMediumDate(date)), findsOneWidget);
     expect(
       tester
           .widget<TextFormField>(
@@ -46,6 +51,9 @@ void main() {
       'Stretch for ten minutes',
     );
 
+    await tester.tap(find.byKey(const ValueKey('clear-entry-date')));
+    await tester.pumpAndSettle();
+
     await tester.enterText(
       find.byKey(const ValueKey('entry-content-field')),
       'Stretch for fifteen minutes',
@@ -53,7 +61,11 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('save-entry-button')));
     await tester.pumpAndSettle();
 
-    expect(repository.updatedEntryRequest, (1, 'Stretch for fifteen minutes'));
+    expect(repository.updatedEntryRequest, (
+      1,
+      'Stretch for fifteen minutes',
+      null,
+    ));
     expect(find.text('Stretch for fifteen minutes'), findsOneWidget);
   });
 
@@ -89,11 +101,12 @@ void main() {
   });
 }
 
-Entry _entry({required int id, required String content}) {
+Entry _entry({required int id, required String content, DateTime? date}) {
   return Entry(
     id: id,
     listId: 1,
     content: content,
+    date: date,
     createdAt: DateTime(2026),
     updatedAt: DateTime(2026),
   );
@@ -139,7 +152,7 @@ class _EditableEntryRepository implements ListTrackerRepository {
   final ListWithCategory summary;
   final List<Entry> _entries;
   final _entryChanges = StreamController<List<Entry>>.broadcast();
-  (int, String)? updatedEntryRequest;
+  (int, String, DateTime?)? updatedEntryRequest;
   int? deletedEntryId;
 
   @override
@@ -158,15 +171,24 @@ class _EditableEntryRepository implements ListTrackerRepository {
   }
 
   @override
-  Future<bool> updateEntry({required int id, required String content}) async {
+  Future<bool> updateEntry({
+    required int id,
+    required String content,
+    required DateTime? date,
+  }) async {
     final index = _entries.indexWhere((entry) => entry.id == id);
     if (index == -1) {
       return false;
     }
 
-    updatedEntryRequest = (id, content);
-    _entries[index] = _entries[index].copyWith(
+    updatedEntryRequest = (id, content, date);
+    final entry = _entries[index];
+    _entries[index] = Entry(
+      id: entry.id,
+      listId: entry.listId,
       content: content,
+      date: date,
+      createdAt: entry.createdAt,
       updatedAt: DateTime(2026, 1, 2),
     );
     _entryChanges.add(List.unmodifiable(_entries));

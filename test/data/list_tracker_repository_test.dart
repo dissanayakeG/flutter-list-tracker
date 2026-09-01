@@ -51,16 +51,23 @@ void main() {
     final entry = await repository.createEntry(
       listId: list.id,
       content: '  The Left Hand of Darkness ',
+      date: DateTime(2026, 3, 15, 18),
     );
 
     expect(entry.content, 'The Left Hand of Darkness');
+    expect(entry.date, DateTime(2026, 3, 15));
     expect(
-      await repository.updateEntry(id: entry.id, content: 'Finished reading'),
+      await repository.updateEntry(
+        id: entry.id,
+        content: 'Finished reading',
+        date: null,
+      ),
       isTrue,
     );
 
     final updatedEntry = (await repository.watchEntries(list.id).first).single;
     expect(updatedEntry.content, 'Finished reading');
+    expect(updatedEntry.date, isNull);
     expect(
       updatedEntry.updatedAt.isAfter(entry.updatedAt) ||
           updatedEntry.updatedAt.isAtSameMomentAs(entry.updatedAt),

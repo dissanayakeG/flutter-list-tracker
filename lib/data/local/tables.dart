@@ -27,6 +27,8 @@ class Entries extends Table {
 
   TextColumn get content => text()();
 
+  DateTimeColumn get date => dateTime().nullable()();
+
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
 
   DateTimeColumn get updatedAt => dateTime().withDefault(currentDateAndTime)();

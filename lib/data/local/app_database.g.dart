@@ -576,6 +576,15 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
     type: DriftSqlType.string,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _dateMeta = const VerificationMeta('date');
+  @override
+  late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
+    'date',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -605,6 +614,7 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
     id,
     listId,
     content,
+    date,
     createdAt,
     updatedAt,
   ];
@@ -639,6 +649,12 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
     } else if (isInserting) {
       context.missing(_contentMeta);
     }
+    if (data.containsKey('date')) {
+      context.handle(
+        _dateMeta,
+        date.isAcceptableOrUnknown(data['date']!, _dateMeta),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -672,6 +688,10 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
         DriftSqlType.string,
         data['${effectivePrefix}content'],
       )!,
+      date: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}date'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -693,12 +713,14 @@ class Entry extends DataClass implements Insertable<Entry> {
   final int id;
   final int listId;
   final String content;
+  final DateTime? date;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Entry({
     required this.id,
     required this.listId,
     required this.content,
+    this.date,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -708,6 +730,9 @@ class Entry extends DataClass implements Insertable<Entry> {
     map['id'] = Variable<int>(id);
     map['list_id'] = Variable<int>(listId);
     map['content'] = Variable<String>(content);
+    if (!nullToAbsent || date != null) {
+      map['date'] = Variable<DateTime>(date);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -718,6 +743,7 @@ class Entry extends DataClass implements Insertable<Entry> {
       id: Value(id),
       listId: Value(listId),
       content: Value(content),
+      date: date == null && nullToAbsent ? const Value.absent() : Value(date),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -732,6 +758,7 @@ class Entry extends DataClass implements Insertable<Entry> {
       id: serializer.fromJson<int>(json['id']),
       listId: serializer.fromJson<int>(json['listId']),
       content: serializer.fromJson<String>(json['content']),
+      date: serializer.fromJson<DateTime?>(json['date']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -743,6 +770,7 @@ class Entry extends DataClass implements Insertable<Entry> {
       'id': serializer.toJson<int>(id),
       'listId': serializer.toJson<int>(listId),
       'content': serializer.toJson<String>(content),
+      'date': serializer.toJson<DateTime?>(date),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -752,12 +780,14 @@ class Entry extends DataClass implements Insertable<Entry> {
     int? id,
     int? listId,
     String? content,
+    Value<DateTime?> date = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Entry(
     id: id ?? this.id,
     listId: listId ?? this.listId,
     content: content ?? this.content,
+    date: date.present ? date.value : this.date,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -766,6 +796,7 @@ class Entry extends DataClass implements Insertable<Entry> {
       id: data.id.present ? data.id.value : this.id,
       listId: data.listId.present ? data.listId.value : this.listId,
       content: data.content.present ? data.content.value : this.content,
+      date: data.date.present ? data.date.value : this.date,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -777,6 +808,7 @@ class Entry extends DataClass implements Insertable<Entry> {
           ..write('id: $id, ')
           ..write('listId: $listId, ')
           ..write('content: $content, ')
+          ..write('date: $date, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -784,7 +816,8 @@ class Entry extends DataClass implements Insertable<Entry> {
   }
 
   @override
-  int get hashCode => Object.hash(id, listId, content, createdAt, updatedAt);
+  int get hashCode =>
+      Object.hash(id, listId, content, date, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -792,6 +825,7 @@ class Entry extends DataClass implements Insertable<Entry> {
           other.id == this.id &&
           other.listId == this.listId &&
           other.content == this.content &&
+          other.date == this.date &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -800,12 +834,14 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   final Value<int> id;
   final Value<int> listId;
   final Value<String> content;
+  final Value<DateTime?> date;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   const EntriesCompanion({
     this.id = const Value.absent(),
     this.listId = const Value.absent(),
     this.content = const Value.absent(),
+    this.date = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   });
@@ -813,6 +849,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     this.id = const Value.absent(),
     required int listId,
     required String content,
+    this.date = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
   }) : listId = Value(listId),
@@ -821,6 +858,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     Expression<int>? id,
     Expression<int>? listId,
     Expression<String>? content,
+    Expression<DateTime>? date,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
   }) {
@@ -828,6 +866,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
       if (id != null) 'id': id,
       if (listId != null) 'list_id': listId,
       if (content != null) 'content': content,
+      if (date != null) 'date': date,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
     });
@@ -837,6 +876,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     Value<int>? id,
     Value<int>? listId,
     Value<String>? content,
+    Value<DateTime?>? date,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
   }) {
@@ -844,6 +884,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
       id: id ?? this.id,
       listId: listId ?? this.listId,
       content: content ?? this.content,
+      date: date ?? this.date,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -861,6 +902,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     if (content.present) {
       map['content'] = Variable<String>(content.value);
     }
+    if (date.present) {
+      map['date'] = Variable<DateTime>(date.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -876,6 +920,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
           ..write('id: $id, ')
           ..write('listId: $listId, ')
           ..write('content: $content, ')
+          ..write('date: $date, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -1538,6 +1583,7 @@ typedef $$EntriesTableCreateCompanionBuilder = EntriesCompanion Function({
   Value<int> id,
   required int listId,
   required String content,
+  Value<DateTime?> date,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
 });
@@ -1545,6 +1591,7 @@ typedef $$EntriesTableUpdateCompanionBuilder = EntriesCompanion Function({
   Value<int> id,
   Value<int> listId,
   Value<String> content,
+  Value<DateTime?> date,
   Value<DateTime> createdAt,
   Value<DateTime> updatedAt,
 });
@@ -1587,6 +1634,11 @@ class $$EntriesTableFilterComposer
 
   ColumnFilters<String> get content => $composableBuilder(
     column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get date => $composableBuilder(
+    column: $table.date,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1643,6 +1695,11 @@ class $$EntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<DateTime> get date => $composableBuilder(
+    column: $table.date,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -1691,6 +1748,9 @@ class $$EntriesTableAnnotationComposer
 
   GeneratedColumn<String> get content =>
       $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get date =>
+      $composableBuilder(column: $table.date, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -1753,12 +1813,14 @@ class $$EntriesTableTableManager
                 Value<int> id = const Value.absent(),
                 Value<int> listId = const Value.absent(),
                 Value<String> content = const Value.absent(),
+                Value<DateTime?> date = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => EntriesCompanion(
                 id: id,
                 listId: listId,
                 content: content,
+                date: date,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),
@@ -1767,12 +1829,14 @@ class $$EntriesTableTableManager
                 Value<int> id = const Value.absent(),
                 required int listId,
                 required String content,
+                Value<DateTime?> date = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => EntriesCompanion.insert(
                 id: id,
                 listId: listId,
                 content: content,
+                date: date,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
               ),

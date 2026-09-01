@@ -64,8 +64,41 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('save-entry-button')));
     await tester.pumpAndSettle();
 
-    expect(repository.createdEntryRequest, (1, 'Walk after lunch'));
+    expect(repository.createdEntryRequest, (1, 'Walk after lunch', null));
     expect(find.text('Morning mobility'), findsOneWidget);
+  });
+
+  testWidgets('saves a selected optional date with a new entry', (
+    tester,
+  ) async {
+    final repository = _DetailRepository(summary: summary);
+    final selectedDate = DateTime(2026, 3, 15);
+
+    await _pumpApp(tester, repository, initialLocation: '/lists/1');
+
+    await tester.tap(find.byKey(const ValueKey('add-entry-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('entry-date-picker')));
+    await tester.pumpAndSettle();
+    tester
+        .widget<CalendarDatePicker>(find.byType(CalendarDatePicker))
+        .onDateChanged(selectedDate);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('entry-content-field')),
+      'Walk after lunch',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-entry-button')));
+    await tester.pumpAndSettle();
+
+    expect(repository.createdEntryRequest, (
+      1,
+      'Walk after lunch',
+      selectedDate,
+    ));
   });
 }
 
@@ -106,7 +139,7 @@ class _DetailRepository implements ListTrackerRepository {
 
   final ListWithCategory summary;
   final List<Entry> _entries;
-  (int, String)? createdEntryRequest;
+  (int, String, DateTime?)? createdEntryRequest;
 
   @override
   Stream<List<Category>> watchCategories() => Stream.value([summary.category]);
@@ -126,12 +159,14 @@ class _DetailRepository implements ListTrackerRepository {
   Future<Entry> createEntry({
     required int listId,
     required String content,
+    DateTime? date,
   }) async {
-    createdEntryRequest = (listId, content);
+    createdEntryRequest = (listId, content, date);
     return Entry(
       id: _entries.length + 1,
       listId: listId,
       content: content,
+      date: date,
       createdAt: DateTime(2026),
       updatedAt: DateTime(2026),
     );
