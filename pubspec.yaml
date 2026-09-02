@@ -1,4 +1,4 @@
-name: flutter_application_3
+name: list_tracker
 description: "A new Flutter project."
 publish_to: 'none'
 version: 0.1.0+1
@@ -24,3 +24,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icons/list_tracker.svg
