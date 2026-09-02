@@ -21,8 +21,16 @@ dev_dependencies:
   drift_dev: ^2.34.5
   build_runner: ^2.16.0
   sqlite3: ^3.5.2
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
   assets:
     - assets/icons/list_tracker.svg
+
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icons/list_tracker.png"
+  min_sdk_android: 21

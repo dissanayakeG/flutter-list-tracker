@@ -13,7 +13,6 @@ Then generate:
 app_database.g.dart
 */
 
-
 @DriftDatabase(tables: [Categories, ListModels, Entries])
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor])
