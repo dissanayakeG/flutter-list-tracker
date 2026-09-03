@@ -7,6 +7,9 @@ import '../../data/repository/list_tracker_repository.dart';
 import '../../data/repository/repository_providers.dart';
 import '../../data/transfer/csv_export_providers.dart';
 import '../../data/transfer/csv_export_service.dart';
+import '../../data/transfer/csv_import_models.dart';
+import '../../data/transfer/csv_import_providers.dart';
+import '../../data/transfer/csv_import_service.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -18,6 +21,7 @@ class DashboardPage extends ConsumerStatefulWidget {
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   int? _selectedCategoryId;
   var _isExporting = false;
+  var _isImporting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +37,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             icon: const Icon(Icons.folder_outlined),
             tooltip: 'Manage categories',
           ),
+          if (_isImporting)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              onPressed: _isExporting ? null : _importCsv,
+              icon: const Icon(Icons.file_upload_outlined),
+              tooltip: 'Import CSV',
+            ),
           if (_isExporting)
             const Padding(
               padding: EdgeInsets.all(12),
@@ -44,7 +63,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             )
           else
             IconButton(
-              onPressed: _exportCsv,
+              onPressed: _isImporting ? null : _exportCsv,
               icon: const Icon(Icons.file_download_outlined),
               tooltip: 'Export CSV',
             ),
@@ -117,6 +136,149 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         setState(() => _isExporting = false);
       }
     }
+  }
+
+  Future<void> _importCsv() async {
+    setState(() => _isImporting = true);
+    try {
+      final service = ref.read(csvImportServiceProvider);
+      final preparation = await service.prepare();
+      if (!mounted) {
+        return;
+      }
+
+      if (preparation is CsvImportCancelled) {
+        return;
+      }
+      if (preparation is CsvImportInvalid) {
+        _showSnackBar('Invalid CSV: ${preparation.message}');
+        return;
+      }
+      if (preparation is CsvImportNeedsSetup) {
+        setState(() => _isImporting = false);
+        await _showSetupDialog(preparation.preview);
+        return;
+      }
+
+      final ready = preparation as CsvImportReady;
+      setState(() => _isImporting = false);
+      final shouldImport = await _showPreviewDialog(ready.preview);
+      if (!mounted || !shouldImport) {
+        return;
+      }
+
+      setState(() => _isImporting = true);
+      try {
+        final result = await service.importEntries(ready.document);
+        if (!mounted) {
+          return;
+        }
+        final createdListsMessage = result.createdLists == 0
+            ? ''
+            : 'Created ${result.createdLists} '
+                  '${result.createdLists == 1 ? 'list' : 'lists'}; ';
+        _showSnackBar(
+          '${createdListsMessage}Imported ${result.addedEntries} entries; '
+          'skipped ${result.skippedEntries}.',
+        );
+      } on CsvImportPreflightException catch (error) {
+        if (mounted) {
+          setState(() => _isImporting = false);
+          await _showSetupDialog(error.preview);
+        }
+      }
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      _showSnackBar('Unable to import CSV. Please try again.');
+    } finally {
+      if (mounted) {
+        setState(() => _isImporting = false);
+      }
+    }
+  }
+
+  Future<bool> _showPreviewDialog(CsvImportPreview preview) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Import CSV'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (preview.listsToCreate.isNotEmpty) ...[
+                  Text(
+                    'Lists to create: '
+                    '${preview.listsToCreate.map((item) => item.displayName).join(', ')}',
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                Text(
+                  'Entries to add: ${preview.entriesToAdd}\n'
+                  'Exact entries to skip: ${preview.entriesToSkip}',
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Import entries'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> _showSetupDialog(CsvImportPreview preview) {
+    return showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Import setup needed'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Create the missing Categories or resolve duplicate Lists, '
+                'then try this import again.',
+              ),
+              if (preview.missingCategories.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Text(
+                  'Missing categories: ${preview.missingCategories.join(', ')}',
+                ),
+              ],
+              if (preview.ambiguousLists.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  'Ambiguous lists: '
+                  '${preview.ambiguousLists.map((item) => item.displayName).join(', ')}',
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

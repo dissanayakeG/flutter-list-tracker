@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:list_tracker/data/local/app_database.dart';
 import 'package:list_tracker/data/repository/list_tracker_repository.dart';
 import 'package:list_tracker/data/transfer/csv_export_service.dart';
+import 'package:list_tracker/data/transfer/csv_import_models.dart';
 
 void main() {
   late AppDatabase database;
@@ -119,6 +120,254 @@ void main() {
     expect(await repository.deleteEntry(entry.id), isTrue);
     expect(await repository.watchEntries(list.id).first, isEmpty);
   });
+
+  test(
+    'blocks missing categories without creating other proposed lists',
+    () async {
+      final reading = await repository.createOrGetCategory(name: 'Reading');
+      final books = await repository.createList(
+        categoryId: reading.id,
+        name: 'Books',
+      );
+      await repository.createOrGetCategory(name: 'Meals');
+      final document = CsvImportDocument(
+        categoryNames: const ['Fitness', 'Meals', 'Reading'],
+        listReferences: const [
+          CsvListReference(categoryName: 'Reading', listName: 'Books'),
+          CsvListReference(categoryName: 'Meals', listName: 'Weekday'),
+        ],
+        entries: const [
+          CsvImportEntry(
+            reference: CsvListReference(
+              categoryName: 'Reading',
+              listName: 'Books',
+            ),
+            content: 'Read a chapter',
+            date: null,
+          ),
+        ],
+      );
+
+      final preview = await repository.previewCsvImport(document);
+
+      expect(preview.missingCategories, ['Fitness']);
+      expect(preview.listsToCreate, const [
+        CsvListReference(categoryName: 'Meals', listName: 'Weekday'),
+      ]);
+      expect(preview.ambiguousLists, isEmpty);
+      expect(preview.hasBlockingReferences, isTrue);
+      await expectLater(
+        repository.importCsvEntries(document),
+        throwsA(isA<CsvImportPreflightException>()),
+      );
+      expect(await repository.getCategories(), hasLength(2));
+      expect(await repository.watchEntries(books.id).first, isEmpty);
+    },
+  );
+
+  test(
+    'creates confirmed lists under their categories and preserves empty lists',
+    () async {
+      final meals = await repository.createOrGetCategory(name: 'Meals');
+      final errands = await repository.createOrGetCategory(name: 'Errands');
+      await repository.createList(categoryId: errands.id, name: 'Weekday');
+      final document = CsvImportDocument(
+        categoryNames: const ['Meals'],
+        listReferences: const [
+          CsvListReference(categoryName: 'Meals', listName: 'Weekday'),
+          CsvListReference(categoryName: 'Meals', listName: 'Someday'),
+        ],
+        entries: [
+          CsvImportEntry(
+            reference: const CsvListReference(
+              categoryName: 'Meals',
+              listName: 'Weekday',
+            ),
+            content: 'Make soup',
+            date: DateTime(2026, 3, 15),
+          ),
+        ],
+      );
+
+      final preview = await repository.previewCsvImport(document);
+      final result = await repository.importCsvEntries(document);
+      final summaries = await repository.watchLists().first;
+      final weekday = summaries.singleWhere(
+        (summary) =>
+            summary.category.id == meals.id && summary.list.name == 'Weekday',
+      );
+      final someday = summaries.singleWhere(
+        (summary) =>
+            summary.category.id == meals.id && summary.list.name == 'Someday',
+      );
+
+      expect(preview.hasBlockingReferences, isFalse);
+      expect(preview.listsToCreate.map((item) => item.displayName), [
+        'Meals > Someday',
+        'Meals > Weekday',
+      ]);
+      expect(preview.entriesToAdd, 1);
+      expect(result.createdLists, 2);
+      expect(result.addedEntries, 1);
+      expect(
+        (await repository.watchEntries(weekday.list.id).first).single.content,
+        'Make soup',
+      );
+      expect(await repository.watchEntries(someday.list.id).first, isEmpty);
+
+      final retryPreview = await repository.previewCsvImport(document);
+      final retryResult = await repository.importCsvEntries(document);
+
+      expect(retryPreview.listsToCreate, isEmpty);
+      expect(retryPreview.entriesToAdd, 0);
+      expect(retryPreview.entriesToSkip, 1);
+      expect(retryResult.createdLists, 0);
+      expect(retryResult.addedEntries, 0);
+      expect(retryResult.skippedEntries, 1);
+    },
+  );
+
+  test('resolves same-named lists within their own categories', () async {
+    final reading = await repository.createOrGetCategory(name: 'Reading');
+    final travel = await repository.createOrGetCategory(name: 'Travel');
+    await repository.createList(categoryId: reading.id, name: 'Books');
+    final travelBooks = await repository.createList(
+      categoryId: travel.id,
+      name: 'Books',
+    );
+    final document = CsvImportDocument(
+      categoryNames: const ['Travel'],
+      listReferences: const [
+        CsvListReference(categoryName: 'Travel', listName: 'Books'),
+      ],
+      entries: [
+        CsvImportEntry(
+          reference: const CsvListReference(
+            categoryName: 'Travel',
+            listName: 'Books',
+          ),
+          content: 'Pack a guidebook',
+          date: DateTime(2026, 3, 15),
+        ),
+      ],
+    );
+
+    final preview = await repository.previewCsvImport(document);
+    final result = await repository.importCsvEntries(document);
+
+    expect(preview.hasBlockingReferences, isFalse);
+    expect(preview.entriesToAdd, 1);
+    expect(result.createdLists, 0);
+    expect(result.addedEntries, 1);
+    expect(
+      (await repository.watchEntries(travelBooks.id).first).single.content,
+      'Pack a guidebook',
+    );
+  });
+
+  test('blocks ambiguous lists without changing any entries', () async {
+    final reading = await repository.createOrGetCategory(name: 'Reading');
+    final firstBooks = await repository.createList(
+      categoryId: reading.id,
+      name: 'Books',
+    );
+    await repository.createList(categoryId: reading.id, name: 'Books');
+    final document = CsvImportDocument(
+      categoryNames: const ['Reading'],
+      listReferences: const [
+        CsvListReference(categoryName: 'Reading', listName: 'Books'),
+      ],
+      entries: const [
+        CsvImportEntry(
+          reference: CsvListReference(
+            categoryName: 'Reading',
+            listName: 'Books',
+          ),
+          content: 'Read a chapter',
+          date: null,
+        ),
+      ],
+    );
+
+    final preview = await repository.previewCsvImport(document);
+
+    expect(preview.ambiguousLists.single.displayName, 'Reading > Books');
+    await expectLater(
+      repository.importCsvEntries(document),
+      throwsA(isA<CsvImportPreflightException>()),
+    );
+    expect(await repository.watchEntries(firstBooks.id).first, isEmpty);
+  });
+
+  test(
+    'skips exact existing entries so import retries are idempotent',
+    () async {
+      final reading = await repository.createOrGetCategory(name: 'Reading');
+      final books = await repository.createList(
+        categoryId: reading.id,
+        name: 'Books',
+      );
+      await repository.createEntry(
+        listId: books.id,
+        content: 'Already tracked',
+        date: DateTime(2026, 3, 15),
+      );
+      final unrelated = await repository.createListInCategory(
+        categoryName: 'Meals',
+        name: 'Weekday',
+      );
+      await repository.createEntry(
+        listId: unrelated.id,
+        content: 'Keep this entry',
+        date: null,
+      );
+      final document = CsvImportDocument(
+        categoryNames: const ['Reading'],
+        listReferences: const [
+          CsvListReference(categoryName: 'Reading', listName: 'Books'),
+        ],
+        entries: [
+          CsvImportEntry(
+            reference: const CsvListReference(
+              categoryName: 'Reading',
+              listName: 'Books',
+            ),
+            content: 'Already tracked',
+            date: DateTime(2026, 3, 15),
+          ),
+          CsvImportEntry(
+            reference: const CsvListReference(
+              categoryName: 'Reading',
+              listName: 'Books',
+            ),
+            content: 'New chapter',
+            date: null,
+          ),
+        ],
+      );
+
+      final firstPreview = await repository.previewCsvImport(document);
+      final firstResult = await repository.importCsvEntries(document);
+      final retryPreview = await repository.previewCsvImport(document);
+      final retryResult = await repository.importCsvEntries(document);
+
+      expect(firstPreview.entriesToAdd, 1);
+      expect(firstPreview.entriesToSkip, 1);
+      expect(firstResult.createdLists, 0);
+      expect(firstResult.addedEntries, 1);
+      expect(firstResult.skippedEntries, 1);
+      expect(retryPreview.entriesToAdd, 0);
+      expect(retryPreview.entriesToSkip, 2);
+      expect(retryResult.createdLists, 0);
+      expect(retryResult.addedEntries, 0);
+      expect(retryResult.skippedEntries, 2);
+      expect(await repository.watchEntries(books.id).first, hasLength(2));
+      expect(
+        (await repository.watchEntries(unrelated.id).first).single.content,
+        'Keep this entry',
+      );
+    },
+  );
 
   test('rejects blank required values', () {
     expect(

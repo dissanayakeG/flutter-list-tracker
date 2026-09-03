@@ -6,6 +6,9 @@ import 'package:list_tracker/data/repository/list_tracker_repository.dart';
 import 'package:list_tracker/data/repository/repository_providers.dart';
 import 'package:list_tracker/data/transfer/csv_export_providers.dart';
 import 'package:list_tracker/data/transfer/csv_export_service.dart';
+import 'package:list_tracker/data/transfer/csv_import_models.dart';
+import 'package:list_tracker/data/transfer/csv_import_providers.dart';
+import 'package:list_tracker/data/transfer/csv_import_service.dart';
 import 'package:list_tracker/main.dart';
 import 'package:list_tracker/ui/dashboard/dashboard_page.dart';
 
@@ -154,6 +157,187 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets(
+    'leaves the Dashboard unchanged when CSV selection is cancelled',
+    (tester) async {
+      final importer = _FakeCsvImportService(const CsvImportCancelled());
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+            csvImportServiceProvider.overrideWithValue(importer),
+          ],
+          child: const MaterialApp(home: DashboardPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Import CSV'));
+      await tester.pumpAndSettle();
+
+      expect(importer.prepareCalls, 1);
+      expect(importer.importCalls, 0);
+      expect(find.byType(SnackBar), findsNothing);
+    },
+  );
+
+  testWidgets('shows an invalid CSV error', (tester) async {
+    final importer = _FakeCsvImportService(
+      const CsvImportInvalid('Row 2 needs a category.'),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          csvImportServiceProvider.overrideWithValue(importer),
+        ],
+        child: const MaterialApp(home: DashboardPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Import CSV'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Invalid CSV: Row 2 needs a category.'), findsOneWidget);
+  });
+
+  testWidgets('shows missing categories and ambiguous lists as blockers', (
+    tester,
+  ) async {
+    final importer = _FakeCsvImportService(
+      const CsvImportNeedsSetup(
+        CsvImportPreview(
+          missingCategories: ['Reading'],
+          listsToCreate: [],
+          ambiguousLists: [
+            CsvListReference(categoryName: 'Travel', listName: 'Books'),
+          ],
+          entriesToAdd: 0,
+          entriesToSkip: 0,
+        ),
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          csvImportServiceProvider.overrideWithValue(importer),
+        ],
+        child: const MaterialApp(home: DashboardPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Import CSV'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Import setup needed'), findsOneWidget);
+    expect(find.text('Missing categories: Reading'), findsOneWidget);
+    expect(find.text('Ambiguous lists: Travel > Books'), findsOneWidget);
+    expect(importer.importCalls, 0);
+  });
+
+  testWidgets(
+    'shows preview counts and does not import when preview is cancelled',
+    (tester) async {
+      final importer = _FakeCsvImportService(_readyPreparation());
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+            csvImportServiceProvider.overrideWithValue(importer),
+          ],
+          child: const MaterialApp(home: DashboardPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Import CSV'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Entries to add: 2\nExact entries to skip: 1'),
+        findsOneWidget,
+      );
+      expect(find.text('Lists to create: Meals > Weekday'), findsOneWidget);
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      expect(importer.importCalls, 0);
+    },
+  );
+
+  testWidgets(
+    'imports confirmed entries and reports added and skipped counts',
+    (tester) async {
+      final importer = _FakeCsvImportService(
+        _readyPreparation(),
+        result: const CsvImportResult(
+          createdLists: 1,
+          addedEntries: 2,
+          skippedEntries: 1,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+            csvImportServiceProvider.overrideWithValue(importer),
+          ],
+          child: const MaterialApp(home: DashboardPage()),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Import CSV'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Import entries'));
+      await tester.pumpAndSettle();
+
+      expect(importer.importCalls, 1);
+      expect(
+        find.text('Created 1 list; Imported 2 entries; skipped 1.'),
+        findsOneWidget,
+      );
+    },
+  );
+}
+
+CsvImportReady _readyPreparation() {
+  return CsvImportReady(
+    document: const CsvImportDocument(
+      categoryNames: ['Reading'],
+      listReferences: [
+        CsvListReference(categoryName: 'Reading', listName: 'Books'),
+      ],
+      entries: [
+        CsvImportEntry(
+          reference: CsvListReference(
+            categoryName: 'Reading',
+            listName: 'Books',
+          ),
+          content: 'Read a chapter',
+          date: null,
+        ),
+      ],
+    ),
+    preview: const CsvImportPreview(
+      missingCategories: [],
+      listsToCreate: [
+        CsvListReference(categoryName: 'Meals', listName: 'Weekday'),
+      ],
+      ambiguousLists: [],
+      entriesToAdd: 2,
+      entriesToSkip: 1,
+    ),
+  );
 }
 
 class _FakeRepository implements ListTrackerRepository {
@@ -192,4 +376,32 @@ class _FakeCsvExportService implements CsvExportService {
 class _ThrowingCsvExportService implements CsvExportService {
   @override
   Future<CsvExportResult> export() => Future.error(StateError('save failed'));
+}
+
+class _FakeCsvImportService implements CsvImportService {
+  _FakeCsvImportService(
+    this.preparation, {
+    this.result = const CsvImportResult(
+      createdLists: 0,
+      addedEntries: 0,
+      skippedEntries: 0,
+    ),
+  });
+
+  final CsvImportPreparation preparation;
+  final CsvImportResult result;
+  var prepareCalls = 0;
+  var importCalls = 0;
+
+  @override
+  Future<CsvImportPreparation> prepare() async {
+    prepareCalls += 1;
+    return preparation;
+  }
+
+  @override
+  Future<CsvImportResult> importEntries(CsvImportDocument document) async {
+    importCalls += 1;
+    return result;
+  }
 }
