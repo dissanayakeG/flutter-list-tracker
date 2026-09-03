@@ -28,6 +28,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       appBar: AppBar(
         title: const Text('List Tracker'),
         actions: [
+          IconButton(
+            onPressed: () => context.push('/categories'),
+            icon: const Icon(Icons.folder_outlined),
+            tooltip: 'Manage categories',
+          ),
           if (_isExporting)
             const Padding(
               padding: EdgeInsets.all(12),

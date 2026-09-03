@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'data/local/app_database.dart';
 import 'ui/add_list/add_list_page.dart';
 import 'ui/add_entry/add_entry_page.dart';
+import 'ui/categories/categories_page.dart';
 import 'ui/dashboard/dashboard_page.dart';
 import 'ui/list_detail/list_detail_page.dart';
 
@@ -16,6 +17,11 @@ final _router = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (_, _) => const DashboardPage()),
     GoRoute(path: '/add-list', builder: (_, _) => const AddListPage()),
+    GoRoute(path: '/categories', builder: (_, _) => const CategoriesPage()),
+    GoRoute(
+      path: '/categories/add',
+      builder: (_, _) => const AddCategoryPage(),
+    ),
     GoRoute(
       path: '/lists/:listId',
       builder: (_, state) =>
