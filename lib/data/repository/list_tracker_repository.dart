@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 
 import '../local/app_database.dart';
+import '../transfer/export_snapshot.dart';
 
 class ListWithCategory {
   const ListWithCategory({required this.list, required this.category});
@@ -17,6 +18,7 @@ abstract interface class ListTrackerRepository {
   Stream<List<Category>> watchCategories();
   Future<List<Category>> getCategories();
   Future<Category> createOrGetCategory({required String name});
+  Future<ListTrackerExportSnapshot> getExportSnapshot();
 
   Stream<List<ListWithCategory>> watchLists();
   Stream<ListWithCategory?> watchList(int id);
@@ -83,6 +85,51 @@ class DriftListTrackerRepository implements ListTrackerRepository {
       return (_database.select(
         _database.categories,
       )..where((table) => table.id.equals(id))).getSingle();
+    });
+  }
+
+  @override
+  Future<ListTrackerExportSnapshot> getExportSnapshot() {
+    return _database.transaction(() async {
+      final categoryRows = await (_database.select(
+        _database.categories,
+      )..orderBy([(table) => OrderingTerm.asc(table.id)])).get();
+      final listRows = await (_database.select(
+        _database.listModels,
+      )..orderBy([(table) => OrderingTerm.asc(table.id)])).get();
+      final entryRows = await (_database.select(
+        _database.entries,
+      )..orderBy([(table) => OrderingTerm.asc(table.id)])).get();
+
+      final categoryNames = {
+        for (final category in categoryRows) category.id: category.name,
+      };
+      final listsById = {for (final list in listRows) list.id: list};
+
+      return ListTrackerExportSnapshot(
+        categories: categoryRows
+            .map((category) => ExportCategory(name: category.name))
+            .toList(growable: false),
+        lists: listRows
+            .map(
+              (list) => ExportList(
+                categoryName: categoryNames[list.categoryId]!,
+                name: list.name,
+              ),
+            )
+            .toList(growable: false),
+        entries: entryRows
+            .map((entry) {
+              final list = listsById[entry.listId]!;
+              return ExportEntry(
+                categoryName: categoryNames[list.categoryId]!,
+                listName: list.name,
+                content: entry.content,
+                date: entry.date,
+              );
+            })
+            .toList(growable: false),
+      );
     });
   }
 

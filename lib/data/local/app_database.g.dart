@@ -22,6 +22,19 @@ class $CategoriesTable extends Categories
       'PRIMARY KEY AUTOINCREMENT',
     ),
   );
+  static const VerificationMeta _externalIdMeta = const VerificationMeta(
+    'externalId',
+  );
+  @override
+  late final GeneratedColumn<String> externalId = GeneratedColumn<String>(
+    'external_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+    clientDefault: externalIdUuid.v4,
+  );
   static const VerificationMeta _nameMeta = const VerificationMeta('name');
   @override
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
@@ -30,10 +43,10 @@ class $CategoriesTable extends Categories
     false,
     type: DriftSqlType.string,
     requiredDuringInsert: true,
-    $customConstraints: 'UNIQUE',
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
   );
   @override
-  List<GeneratedColumn> get $columns => [id, name];
+  List<GeneratedColumn> get $columns => [id, externalId, name];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -48,6 +61,12 @@ class $CategoriesTable extends Categories
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('external_id')) {
+      context.handle(
+        _externalIdMeta,
+        externalId.isAcceptableOrUnknown(data['external_id']!, _externalIdMeta),
+      );
     }
     if (data.containsKey('name')) {
       context.handle(
@@ -70,6 +89,10 @@ class $CategoriesTable extends Categories
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
+      externalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}external_id'],
+      )!,
       name: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}name'],
@@ -85,18 +108,28 @@ class $CategoriesTable extends Categories
 
 class Category extends DataClass implements Insertable<Category> {
   final int id;
+  final String externalId;
   final String name;
-  const Category({required this.id, required this.name});
+  const Category({
+    required this.id,
+    required this.externalId,
+    required this.name,
+  });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    map['external_id'] = Variable<String>(externalId);
     map['name'] = Variable<String>(name);
     return map;
   }
 
   CategoriesCompanion toCompanion(bool nullToAbsent) {
-    return CategoriesCompanion(id: Value(id), name: Value(name));
+    return CategoriesCompanion(
+      id: Value(id),
+      externalId: Value(externalId),
+      name: Value(name),
+    );
   }
 
   factory Category.fromJson(
@@ -106,6 +139,7 @@ class Category extends DataClass implements Insertable<Category> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Category(
       id: serializer.fromJson<int>(json['id']),
+      externalId: serializer.fromJson<String>(json['externalId']),
       name: serializer.fromJson<String>(json['name']),
     );
   }
@@ -114,15 +148,22 @@ class Category extends DataClass implements Insertable<Category> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'externalId': serializer.toJson<String>(externalId),
       'name': serializer.toJson<String>(name),
     };
   }
 
-  Category copyWith({int? id, String? name}) =>
-      Category(id: id ?? this.id, name: name ?? this.name);
+  Category copyWith({int? id, String? externalId, String? name}) => Category(
+    id: id ?? this.id,
+    externalId: externalId ?? this.externalId,
+    name: name ?? this.name,
+  );
   Category copyWithCompanion(CategoriesCompanion data) {
     return Category(
       id: data.id.present ? data.id.value : this.id,
+      externalId: data.externalId.present
+          ? data.externalId.value
+          : this.externalId,
       name: data.name.present ? data.name.value : this.name,
     );
   }
@@ -131,42 +172,59 @@ class Category extends DataClass implements Insertable<Category> {
   String toString() {
     return (StringBuffer('Category(')
           ..write('id: $id, ')
+          ..write('externalId: $externalId, ')
           ..write('name: $name')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, name);
+  int get hashCode => Object.hash(id, externalId, name);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      (other is Category && other.id == this.id && other.name == this.name);
+      (other is Category &&
+          other.id == this.id &&
+          other.externalId == this.externalId &&
+          other.name == this.name);
 }
 
 class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<int> id;
+  final Value<String> externalId;
   final Value<String> name;
   const CategoriesCompanion({
     this.id = const Value.absent(),
+    this.externalId = const Value.absent(),
     this.name = const Value.absent(),
   });
   CategoriesCompanion.insert({
     this.id = const Value.absent(),
+    this.externalId = const Value.absent(),
     required String name,
   }) : name = Value(name);
   static Insertable<Category> custom({
     Expression<int>? id,
+    Expression<String>? externalId,
     Expression<String>? name,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (externalId != null) 'external_id': externalId,
       if (name != null) 'name': name,
     });
   }
 
-  CategoriesCompanion copyWith({Value<int>? id, Value<String>? name}) {
-    return CategoriesCompanion(id: id ?? this.id, name: name ?? this.name);
+  CategoriesCompanion copyWith({
+    Value<int>? id,
+    Value<String>? externalId,
+    Value<String>? name,
+  }) {
+    return CategoriesCompanion(
+      id: id ?? this.id,
+      externalId: externalId ?? this.externalId,
+      name: name ?? this.name,
+    );
   }
 
   @override
@@ -174,6 +232,9 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
+    }
+    if (externalId.present) {
+      map['external_id'] = Variable<String>(externalId.value);
     }
     if (name.present) {
       map['name'] = Variable<String>(name.value);
@@ -185,6 +246,7 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   String toString() {
     return (StringBuffer('CategoriesCompanion(')
           ..write('id: $id, ')
+          ..write('externalId: $externalId, ')
           ..write('name: $name')
           ..write(')'))
         .toString();
@@ -209,6 +271,19 @@ class $ListModelsTable extends ListModels
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'PRIMARY KEY AUTOINCREMENT',
     ),
+  );
+  static const VerificationMeta _externalIdMeta = const VerificationMeta(
+    'externalId',
+  );
+  @override
+  late final GeneratedColumn<String> externalId = GeneratedColumn<String>(
+    'external_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+    clientDefault: externalIdUuid.v4,
   );
   static const VerificationMeta _categoryIdMeta = const VerificationMeta(
     'categoryId',
@@ -255,7 +330,14 @@ class $ListModelsTable extends ListModels
     defaultValue: currentDateAndTime,
   );
   @override
-  List<GeneratedColumn> get $columns => [id, categoryId, name, note, createdAt];
+  List<GeneratedColumn> get $columns => [
+    id,
+    externalId,
+    categoryId,
+    name,
+    note,
+    createdAt,
+  ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -270,6 +352,12 @@ class $ListModelsTable extends ListModels
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('external_id')) {
+      context.handle(
+        _externalIdMeta,
+        externalId.isAcceptableOrUnknown(data['external_id']!, _externalIdMeta),
+      );
     }
     if (data.containsKey('category_id')) {
       context.handle(
@@ -312,6 +400,10 @@ class $ListModelsTable extends ListModels
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
+      externalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}external_id'],
+      )!,
       categoryId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}category_id'],
@@ -339,12 +431,14 @@ class $ListModelsTable extends ListModels
 
 class ListModel extends DataClass implements Insertable<ListModel> {
   final int id;
+  final String externalId;
   final int categoryId;
   final String name;
   final String? note;
   final DateTime createdAt;
   const ListModel({
     required this.id,
+    required this.externalId,
     required this.categoryId,
     required this.name,
     this.note,
@@ -354,6 +448,7 @@ class ListModel extends DataClass implements Insertable<ListModel> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    map['external_id'] = Variable<String>(externalId);
     map['category_id'] = Variable<int>(categoryId);
     map['name'] = Variable<String>(name);
     if (!nullToAbsent || note != null) {
@@ -366,6 +461,7 @@ class ListModel extends DataClass implements Insertable<ListModel> {
   ListModelsCompanion toCompanion(bool nullToAbsent) {
     return ListModelsCompanion(
       id: Value(id),
+      externalId: Value(externalId),
       categoryId: Value(categoryId),
       name: Value(name),
       note: note == null && nullToAbsent ? const Value.absent() : Value(note),
@@ -380,6 +476,7 @@ class ListModel extends DataClass implements Insertable<ListModel> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return ListModel(
       id: serializer.fromJson<int>(json['id']),
+      externalId: serializer.fromJson<String>(json['externalId']),
       categoryId: serializer.fromJson<int>(json['categoryId']),
       name: serializer.fromJson<String>(json['name']),
       note: serializer.fromJson<String?>(json['note']),
@@ -391,6 +488,7 @@ class ListModel extends DataClass implements Insertable<ListModel> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'externalId': serializer.toJson<String>(externalId),
       'categoryId': serializer.toJson<int>(categoryId),
       'name': serializer.toJson<String>(name),
       'note': serializer.toJson<String?>(note),
@@ -400,12 +498,14 @@ class ListModel extends DataClass implements Insertable<ListModel> {
 
   ListModel copyWith({
     int? id,
+    String? externalId,
     int? categoryId,
     String? name,
     Value<String?> note = const Value.absent(),
     DateTime? createdAt,
   }) => ListModel(
     id: id ?? this.id,
+    externalId: externalId ?? this.externalId,
     categoryId: categoryId ?? this.categoryId,
     name: name ?? this.name,
     note: note.present ? note.value : this.note,
@@ -414,6 +514,9 @@ class ListModel extends DataClass implements Insertable<ListModel> {
   ListModel copyWithCompanion(ListModelsCompanion data) {
     return ListModel(
       id: data.id.present ? data.id.value : this.id,
+      externalId: data.externalId.present
+          ? data.externalId.value
+          : this.externalId,
       categoryId: data.categoryId.present
           ? data.categoryId.value
           : this.categoryId,
@@ -427,6 +530,7 @@ class ListModel extends DataClass implements Insertable<ListModel> {
   String toString() {
     return (StringBuffer('ListModel(')
           ..write('id: $id, ')
+          ..write('externalId: $externalId, ')
           ..write('categoryId: $categoryId, ')
           ..write('name: $name, ')
           ..write('note: $note, ')
@@ -436,12 +540,14 @@ class ListModel extends DataClass implements Insertable<ListModel> {
   }
 
   @override
-  int get hashCode => Object.hash(id, categoryId, name, note, createdAt);
+  int get hashCode =>
+      Object.hash(id, externalId, categoryId, name, note, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is ListModel &&
           other.id == this.id &&
+          other.externalId == this.externalId &&
           other.categoryId == this.categoryId &&
           other.name == this.name &&
           other.note == this.note &&
@@ -450,12 +556,14 @@ class ListModel extends DataClass implements Insertable<ListModel> {
 
 class ListModelsCompanion extends UpdateCompanion<ListModel> {
   final Value<int> id;
+  final Value<String> externalId;
   final Value<int> categoryId;
   final Value<String> name;
   final Value<String?> note;
   final Value<DateTime> createdAt;
   const ListModelsCompanion({
     this.id = const Value.absent(),
+    this.externalId = const Value.absent(),
     this.categoryId = const Value.absent(),
     this.name = const Value.absent(),
     this.note = const Value.absent(),
@@ -463,6 +571,7 @@ class ListModelsCompanion extends UpdateCompanion<ListModel> {
   });
   ListModelsCompanion.insert({
     this.id = const Value.absent(),
+    this.externalId = const Value.absent(),
     required int categoryId,
     required String name,
     this.note = const Value.absent(),
@@ -471,6 +580,7 @@ class ListModelsCompanion extends UpdateCompanion<ListModel> {
        name = Value(name);
   static Insertable<ListModel> custom({
     Expression<int>? id,
+    Expression<String>? externalId,
     Expression<int>? categoryId,
     Expression<String>? name,
     Expression<String>? note,
@@ -478,6 +588,7 @@ class ListModelsCompanion extends UpdateCompanion<ListModel> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (externalId != null) 'external_id': externalId,
       if (categoryId != null) 'category_id': categoryId,
       if (name != null) 'name': name,
       if (note != null) 'note': note,
@@ -487,6 +598,7 @@ class ListModelsCompanion extends UpdateCompanion<ListModel> {
 
   ListModelsCompanion copyWith({
     Value<int>? id,
+    Value<String>? externalId,
     Value<int>? categoryId,
     Value<String>? name,
     Value<String?>? note,
@@ -494,6 +606,7 @@ class ListModelsCompanion extends UpdateCompanion<ListModel> {
   }) {
     return ListModelsCompanion(
       id: id ?? this.id,
+      externalId: externalId ?? this.externalId,
       categoryId: categoryId ?? this.categoryId,
       name: name ?? this.name,
       note: note ?? this.note,
@@ -506,6 +619,9 @@ class ListModelsCompanion extends UpdateCompanion<ListModel> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
+    }
+    if (externalId.present) {
+      map['external_id'] = Variable<String>(externalId.value);
     }
     if (categoryId.present) {
       map['category_id'] = Variable<int>(categoryId.value);
@@ -526,6 +642,7 @@ class ListModelsCompanion extends UpdateCompanion<ListModel> {
   String toString() {
     return (StringBuffer('ListModelsCompanion(')
           ..write('id: $id, ')
+          ..write('externalId: $externalId, ')
           ..write('categoryId: $categoryId, ')
           ..write('name: $name, ')
           ..write('note: $note, ')
@@ -552,6 +669,19 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
     defaultConstraints: GeneratedColumn.constraintIsAlways(
       'PRIMARY KEY AUTOINCREMENT',
     ),
+  );
+  static const VerificationMeta _externalIdMeta = const VerificationMeta(
+    'externalId',
+  );
+  @override
+  late final GeneratedColumn<String> externalId = GeneratedColumn<String>(
+    'external_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'),
+    clientDefault: externalIdUuid.v4,
   );
   static const VerificationMeta _listIdMeta = const VerificationMeta('listId');
   @override
@@ -612,6 +742,7 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
   @override
   List<GeneratedColumn> get $columns => [
     id,
+    externalId,
     listId,
     content,
     date,
@@ -632,6 +763,12 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
     final data = instance.toColumns(true);
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('external_id')) {
+      context.handle(
+        _externalIdMeta,
+        externalId.isAcceptableOrUnknown(data['external_id']!, _externalIdMeta),
+      );
     }
     if (data.containsKey('list_id')) {
       context.handle(
@@ -680,6 +817,10 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
         DriftSqlType.int,
         data['${effectivePrefix}id'],
       )!,
+      externalId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}external_id'],
+      )!,
       listId: attachedDatabase.typeMapping.read(
         DriftSqlType.int,
         data['${effectivePrefix}list_id'],
@@ -711,6 +852,7 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
 
 class Entry extends DataClass implements Insertable<Entry> {
   final int id;
+  final String externalId;
   final int listId;
   final String content;
   final DateTime? date;
@@ -718,6 +860,7 @@ class Entry extends DataClass implements Insertable<Entry> {
   final DateTime updatedAt;
   const Entry({
     required this.id,
+    required this.externalId,
     required this.listId,
     required this.content,
     this.date,
@@ -728,6 +871,7 @@ class Entry extends DataClass implements Insertable<Entry> {
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    map['external_id'] = Variable<String>(externalId);
     map['list_id'] = Variable<int>(listId);
     map['content'] = Variable<String>(content);
     if (!nullToAbsent || date != null) {
@@ -741,6 +885,7 @@ class Entry extends DataClass implements Insertable<Entry> {
   EntriesCompanion toCompanion(bool nullToAbsent) {
     return EntriesCompanion(
       id: Value(id),
+      externalId: Value(externalId),
       listId: Value(listId),
       content: Value(content),
       date: date == null && nullToAbsent ? const Value.absent() : Value(date),
@@ -756,6 +901,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Entry(
       id: serializer.fromJson<int>(json['id']),
+      externalId: serializer.fromJson<String>(json['externalId']),
       listId: serializer.fromJson<int>(json['listId']),
       content: serializer.fromJson<String>(json['content']),
       date: serializer.fromJson<DateTime?>(json['date']),
@@ -768,6 +914,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'externalId': serializer.toJson<String>(externalId),
       'listId': serializer.toJson<int>(listId),
       'content': serializer.toJson<String>(content),
       'date': serializer.toJson<DateTime?>(date),
@@ -778,6 +925,7 @@ class Entry extends DataClass implements Insertable<Entry> {
 
   Entry copyWith({
     int? id,
+    String? externalId,
     int? listId,
     String? content,
     Value<DateTime?> date = const Value.absent(),
@@ -785,6 +933,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     DateTime? updatedAt,
   }) => Entry(
     id: id ?? this.id,
+    externalId: externalId ?? this.externalId,
     listId: listId ?? this.listId,
     content: content ?? this.content,
     date: date.present ? date.value : this.date,
@@ -794,6 +943,9 @@ class Entry extends DataClass implements Insertable<Entry> {
   Entry copyWithCompanion(EntriesCompanion data) {
     return Entry(
       id: data.id.present ? data.id.value : this.id,
+      externalId: data.externalId.present
+          ? data.externalId.value
+          : this.externalId,
       listId: data.listId.present ? data.listId.value : this.listId,
       content: data.content.present ? data.content.value : this.content,
       date: data.date.present ? data.date.value : this.date,
@@ -806,6 +958,7 @@ class Entry extends DataClass implements Insertable<Entry> {
   String toString() {
     return (StringBuffer('Entry(')
           ..write('id: $id, ')
+          ..write('externalId: $externalId, ')
           ..write('listId: $listId, ')
           ..write('content: $content, ')
           ..write('date: $date, ')
@@ -817,12 +970,13 @@ class Entry extends DataClass implements Insertable<Entry> {
 
   @override
   int get hashCode =>
-      Object.hash(id, listId, content, date, createdAt, updatedAt);
+      Object.hash(id, externalId, listId, content, date, createdAt, updatedAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Entry &&
           other.id == this.id &&
+          other.externalId == this.externalId &&
           other.listId == this.listId &&
           other.content == this.content &&
           other.date == this.date &&
@@ -832,6 +986,7 @@ class Entry extends DataClass implements Insertable<Entry> {
 
 class EntriesCompanion extends UpdateCompanion<Entry> {
   final Value<int> id;
+  final Value<String> externalId;
   final Value<int> listId;
   final Value<String> content;
   final Value<DateTime?> date;
@@ -839,6 +994,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   final Value<DateTime> updatedAt;
   const EntriesCompanion({
     this.id = const Value.absent(),
+    this.externalId = const Value.absent(),
     this.listId = const Value.absent(),
     this.content = const Value.absent(),
     this.date = const Value.absent(),
@@ -847,6 +1003,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   });
   EntriesCompanion.insert({
     this.id = const Value.absent(),
+    this.externalId = const Value.absent(),
     required int listId,
     required String content,
     this.date = const Value.absent(),
@@ -856,6 +1013,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
        content = Value(content);
   static Insertable<Entry> custom({
     Expression<int>? id,
+    Expression<String>? externalId,
     Expression<int>? listId,
     Expression<String>? content,
     Expression<DateTime>? date,
@@ -864,6 +1022,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (externalId != null) 'external_id': externalId,
       if (listId != null) 'list_id': listId,
       if (content != null) 'content': content,
       if (date != null) 'date': date,
@@ -874,6 +1033,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
 
   EntriesCompanion copyWith({
     Value<int>? id,
+    Value<String>? externalId,
     Value<int>? listId,
     Value<String>? content,
     Value<DateTime?>? date,
@@ -882,6 +1042,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   }) {
     return EntriesCompanion(
       id: id ?? this.id,
+      externalId: externalId ?? this.externalId,
       listId: listId ?? this.listId,
       content: content ?? this.content,
       date: date ?? this.date,
@@ -895,6 +1056,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     final map = <String, Expression>{};
     if (id.present) {
       map['id'] = Variable<int>(id.value);
+    }
+    if (externalId.present) {
+      map['external_id'] = Variable<String>(externalId.value);
     }
     if (listId.present) {
       map['list_id'] = Variable<int>(listId.value);
@@ -918,6 +1082,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   String toString() {
     return (StringBuffer('EntriesCompanion(')
           ..write('id: $id, ')
+          ..write('externalId: $externalId, ')
           ..write('listId: $listId, ')
           ..write('content: $content, ')
           ..write('date: $date, ')
@@ -957,10 +1122,12 @@ abstract class _$AppDatabase extends GeneratedDatabase {
 
 typedef $$CategoriesTableCreateCompanionBuilder = CategoriesCompanion Function({
   Value<int> id,
+  Value<String> externalId,
   required String name,
 });
 typedef $$CategoriesTableUpdateCompanionBuilder = CategoriesCompanion Function({
   Value<int> id,
+  Value<String> externalId,
   Value<String> name,
 });
 
@@ -998,6 +1165,11 @@ class $$CategoriesTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get externalId => $composableBuilder(
+    column: $table.externalId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1046,6 +1218,11 @@ class $$CategoriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get externalId => $composableBuilder(
+    column: $table.externalId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
@@ -1063,6 +1240,11 @@ class $$CategoriesTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get externalId => $composableBuilder(
+    column: $table.externalId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -1121,12 +1303,19 @@ class $$CategoriesTableTableManager
               $$CategoriesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
+            Value<String> externalId = const Value.absent(),
             Value<String> name = const Value.absent(),
-          }) => CategoriesCompanion(id: id, name: name),
-          createCompanionCallback: ({
-            Value<int> id = const Value.absent(),
-            required String name,
-          }) => CategoriesCompanion.insert(id: id, name: name),
+          }) => CategoriesCompanion(id: id, externalId: externalId, name: name),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String> externalId = const Value.absent(),
+                required String name,
+              }) => CategoriesCompanion.insert(
+                id: id,
+                externalId: externalId,
+                name: name,
+              ),
           withReferenceMapper: (p0) => p0
               .map(
                 (e) => (
@@ -1185,6 +1374,7 @@ typedef $$CategoriesTableProcessedTableManager =
     >;
 typedef $$ListModelsTableCreateCompanionBuilder = ListModelsCompanion Function({
   Value<int> id,
+  Value<String> externalId,
   required int categoryId,
   required String name,
   Value<String?> note,
@@ -1192,6 +1382,7 @@ typedef $$ListModelsTableCreateCompanionBuilder = ListModelsCompanion Function({
 });
 typedef $$ListModelsTableUpdateCompanionBuilder = ListModelsCompanion Function({
   Value<int> id,
+  Value<String> externalId,
   Value<int> categoryId,
   Value<String> name,
   Value<String?> note,
@@ -1250,6 +1441,11 @@ class $$ListModelsTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get externalId => $composableBuilder(
+    column: $table.externalId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1331,6 +1527,11 @@ class $$ListModelsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get externalId => $composableBuilder(
+    column: $table.externalId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get name => $composableBuilder(
     column: $table.name,
     builder: (column) => ColumnOrderings(column),
@@ -1381,6 +1582,11 @@ class $$ListModelsTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get externalId => $composableBuilder(
+    column: $table.externalId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
@@ -1469,12 +1675,14 @@ class $$ListModelsTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String> externalId = const Value.absent(),
                 Value<int> categoryId = const Value.absent(),
                 Value<String> name = const Value.absent(),
                 Value<String?> note = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ListModelsCompanion(
                 id: id,
+                externalId: externalId,
                 categoryId: categoryId,
                 name: name,
                 note: note,
@@ -1483,12 +1691,14 @@ class $$ListModelsTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String> externalId = const Value.absent(),
                 required int categoryId,
                 required String name,
                 Value<String?> note = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
               }) => ListModelsCompanion.insert(
                 id: id,
+                externalId: externalId,
                 categoryId: categoryId,
                 name: name,
                 note: note,
@@ -1581,6 +1791,7 @@ typedef $$ListModelsTableProcessedTableManager =
     >;
 typedef $$EntriesTableCreateCompanionBuilder = EntriesCompanion Function({
   Value<int> id,
+  Value<String> externalId,
   required int listId,
   required String content,
   Value<DateTime?> date,
@@ -1589,6 +1800,7 @@ typedef $$EntriesTableCreateCompanionBuilder = EntriesCompanion Function({
 });
 typedef $$EntriesTableUpdateCompanionBuilder = EntriesCompanion Function({
   Value<int> id,
+  Value<String> externalId,
   Value<int> listId,
   Value<String> content,
   Value<DateTime?> date,
@@ -1629,6 +1841,11 @@ class $$EntriesTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
     column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get externalId => $composableBuilder(
+    column: $table.externalId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -1690,6 +1907,11 @@ class $$EntriesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get externalId => $composableBuilder(
+    column: $table.externalId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get content => $composableBuilder(
     column: $table.content,
     builder: (column) => ColumnOrderings(column),
@@ -1745,6 +1967,11 @@ class $$EntriesTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get externalId => $composableBuilder(
+    column: $table.externalId,
+    builder: (column) => column,
+  );
 
   GeneratedColumn<String> get content =>
       $composableBuilder(column: $table.content, builder: (column) => column);
@@ -1811,6 +2038,7 @@ class $$EntriesTableTableManager
           updateCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String> externalId = const Value.absent(),
                 Value<int> listId = const Value.absent(),
                 Value<String> content = const Value.absent(),
                 Value<DateTime?> date = const Value.absent(),
@@ -1818,6 +2046,7 @@ class $$EntriesTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => EntriesCompanion(
                 id: id,
+                externalId: externalId,
                 listId: listId,
                 content: content,
                 date: date,
@@ -1827,6 +2056,7 @@ class $$EntriesTableTableManager
           createCompanionCallback:
               ({
                 Value<int> id = const Value.absent(),
+                Value<String> externalId = const Value.absent(),
                 required int listId,
                 required String content,
                 Value<DateTime?> date = const Value.absent(),
@@ -1834,6 +2064,7 @@ class $$EntriesTableTableManager
                 Value<DateTime> updatedAt = const Value.absent(),
               }) => EntriesCompanion.insert(
                 id: id,
+                externalId: externalId,
                 listId: listId,
                 content: content,
                 date: date,

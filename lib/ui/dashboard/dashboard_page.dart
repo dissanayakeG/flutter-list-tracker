@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../data/local/app_database.dart';
 import '../../data/repository/list_tracker_repository.dart';
 import '../../data/repository/repository_providers.dart';
+import '../../data/transfer/csv_export_providers.dart';
+import '../../data/transfer/csv_export_service.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -15,6 +17,7 @@ class DashboardPage extends ConsumerStatefulWidget {
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   int? _selectedCategoryId;
+  var _isExporting = false;
 
   @override
   Widget build(BuildContext context) {
@@ -22,7 +25,26 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final listSummaries = ref.watch(listSummariesProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('List Tracker')),
+      appBar: AppBar(
+        title: const Text('List Tracker'),
+        actions: [
+          if (_isExporting)
+            const Padding(
+              padding: EdgeInsets.all(12),
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              onPressed: _exportCsv,
+              icon: const Icon(Icons.file_download_outlined),
+              tooltip: 'Export CSV',
+            ),
+        ],
+      ),
       body: Column(
         children: [
           _CategoryFilter(
@@ -61,6 +83,35 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     return summaries
         .where((summary) => summary.category.id == selectedCategoryId)
         .toList(growable: false);
+  }
+
+  Future<void> _exportCsv() async {
+    setState(() => _isExporting = true);
+    try {
+      final result = await ref.read(csvExportServiceProvider).export();
+      if (!mounted) {
+        return;
+      }
+      final message = switch (result) {
+        CsvExportResult.saved => 'CSV exported.',
+        CsvExportResult.cancelled => 'CSV export cancelled.',
+      };
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to export CSV. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
+    }
   }
 }
 

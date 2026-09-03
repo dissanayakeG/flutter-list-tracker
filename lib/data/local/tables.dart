@@ -1,13 +1,22 @@
 import 'package:drift/drift.dart';
+import 'package:uuid/uuid.dart';
+
+final externalIdUuid = Uuid();
 
 class Categories extends Table {
   IntColumn get id => integer().autoIncrement()();
 
-  TextColumn get name => text().customConstraint('UNIQUE')();
+  TextColumn get externalId =>
+      text().unique().clientDefault(externalIdUuid.v4)();
+
+  TextColumn get name => text().unique()();
 }
 
 class ListModels extends Table {
   IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get externalId =>
+      text().unique().clientDefault(externalIdUuid.v4)();
 
   IntColumn get categoryId =>
       integer().references(Categories, #id, onDelete: KeyAction.restrict)();
@@ -21,6 +30,9 @@ class ListModels extends Table {
 
 class Entries extends Table {
   IntColumn get id => integer().autoIncrement()();
+
+  TextColumn get externalId =>
+      text().unique().clientDefault(externalIdUuid.v4)();
 
   IntColumn get listId =>
       integer().references(ListModels, #id, onDelete: KeyAction.cascade)();

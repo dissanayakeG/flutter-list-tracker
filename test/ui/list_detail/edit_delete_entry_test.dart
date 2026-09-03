@@ -11,9 +11,14 @@ import 'package:list_tracker/ui/list_detail/list_detail_page.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
-  const category = Category(id: 1, name: 'Exercise');
+  const category = Category(
+    id: 1,
+    externalId: 'exercise-category',
+    name: 'Exercise',
+  );
   final list = ListModel(
     id: 1,
+    externalId: 'morning-mobility',
     categoryId: category.id,
     name: 'Morning mobility',
     createdAt: DateTime(2026),
@@ -104,6 +109,7 @@ void main() {
 Entry _entry({required int id, required String content, DateTime? date}) {
   return Entry(
     id: id,
+    externalId: 'entry-$id',
     listId: 1,
     content: content,
     date: date,
@@ -185,6 +191,7 @@ class _EditableEntryRepository implements ListTrackerRepository {
     final entry = _entries[index];
     _entries[index] = Entry(
       id: entry.id,
+      externalId: entry.externalId,
       listId: entry.listId,
       content: content,
       date: date,

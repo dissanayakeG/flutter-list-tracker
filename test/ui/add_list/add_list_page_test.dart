@@ -22,7 +22,11 @@ void main() {
   });
 
   testWidgets('saves a list in a selected existing category', (tester) async {
-    const reading = Category(id: 1, name: 'Reading');
+    const reading = Category(
+      id: 1,
+      externalId: 'reading-category',
+      name: 'Reading',
+    );
     final repository = _RecordingRepository(categories: const [reading]);
 
     await _pumpAddListPage(tester, repository);
@@ -119,6 +123,7 @@ class _RecordingRepository implements ListTrackerRepository {
     existingCategoryRequest = (categoryId, name, note);
     return ListModel(
       id: 1,
+      externalId: 'recorded-list',
       categoryId: categoryId,
       name: name,
       note: note,
@@ -135,6 +140,7 @@ class _RecordingRepository implements ListTrackerRepository {
     newCategoryRequest = (categoryName, name, note);
     return ListModel(
       id: 1,
+      externalId: 'recorded-new-list',
       categoryId: 1,
       name: name,
       note: note,

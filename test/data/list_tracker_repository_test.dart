@@ -2,6 +2,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:list_tracker/data/local/app_database.dart';
 import 'package:list_tracker/data/repository/list_tracker_repository.dart';
+import 'package:list_tracker/data/transfer/csv_export_service.dart';
 
 void main() {
   late AppDatabase database;
@@ -40,6 +41,47 @@ void main() {
       expect(summary.list.name, 'Morning mobility');
       expect(summary.list.note, '15 minutes');
       expect(allLists.single.list, summary.list);
+    },
+  );
+
+  test(
+    'keeps UUIDs internal and creates a human-readable export snapshot',
+    () async {
+      final list = await repository.createListInCategory(
+        categoryName: 'Meal Plans',
+        name: 'Weekday meals',
+        note: 'Quick recipes',
+      );
+      final entry = await repository.createEntry(
+        listId: list.id,
+        content: 'Soup and salad',
+        date: DateTime(2026, 3, 15),
+      );
+
+      final category = (await repository.getCategories()).single;
+      final snapshot = await repository.getExportSnapshot();
+
+      expect(category.externalId, isNotEmpty);
+      expect(list.externalId, isNotEmpty);
+      expect(entry.externalId, isNotEmpty);
+      expect(snapshot.categories, hasLength(1));
+      expect(snapshot.lists, hasLength(1));
+      expect(snapshot.entries, hasLength(1));
+      expect(snapshot.categories.single.name, category.name);
+      expect(snapshot.lists.single.categoryName, category.name);
+      expect(snapshot.lists.single.name, list.name);
+      expect(snapshot.entries.single.categoryName, category.name);
+      expect(snapshot.entries.single.listName, list.name);
+      expect(snapshot.entries.single.content, 'Soup and salad');
+      expect(snapshot.entries.single.date, DateTime(2026, 3, 15));
+
+      final csv = const CsvExportEncoder().encode(snapshot);
+      expect(csv, isNot(contains('Quick recipes')));
+      expect(csv, isNot(contains(category.externalId)));
+      expect(csv, isNot(contains(list.externalId)));
+      expect(csv, isNot(contains(entry.externalId)));
+      expect(csv, isNot(contains(entry.createdAt.toUtc().toIso8601String())));
+      expect(csv, isNot(contains(entry.updatedAt.toUtc().toIso8601String())));
     },
   );
 

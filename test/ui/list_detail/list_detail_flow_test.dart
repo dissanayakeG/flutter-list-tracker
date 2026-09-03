@@ -10,10 +10,15 @@ import 'package:list_tracker/ui/list_detail/list_detail_page.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
-  const category = Category(id: 1, name: 'Exercise');
+  const category = Category(
+    id: 1,
+    externalId: 'exercise-category',
+    name: 'Exercise',
+  );
 
   final list = ListModel(
     id: 1,
+    externalId: 'morning-mobility',
     categoryId: category.id,
     name: 'Morning mobility',
     createdAt: DateTime(2026),
@@ -65,6 +70,7 @@ void main() {
   ) async {
     final existingEntry = Entry(
       id: 1,
+      externalId: 'stretch-entry',
       listId: list.id,
       content: 'Stretch for ten minutes',
       createdAt: DateTime(2026),
@@ -189,6 +195,7 @@ class _DetailRepository implements ListTrackerRepository {
     createdEntryRequest = (listId, content, date);
     return Entry(
       id: _entries.length + 1,
+      externalId: 'created-entry-${_entries.length + 1}',
       listId: listId,
       content: content,
       date: date,
