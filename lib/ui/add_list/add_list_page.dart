@@ -55,8 +55,21 @@ class _AddListPageState extends ConsumerState<AddListPage> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
+              Text(
+                'Build a new list',
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Choose where this list belongs and give it a clear name.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
               _CategoryField(
                 categories: categories,
                 categoryMode: _categoryMode,
@@ -183,13 +196,13 @@ class _CategoryField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return categories.when(
-      data: _buildCategoryInput,
+      data: (categories) => _buildCategoryInput(context, categories),
       loading: () => const LinearProgressIndicator(),
-      error: (_, _) => _buildCategoryInput(const []),
+      error: (_, _) => _buildCategoryInput(context, const []),
     );
   }
 
-  Widget _buildCategoryInput(List<Category> categories) {
+  Widget _buildCategoryInput(BuildContext context, List<Category> categories) {
     if (categories.isEmpty) {
       return _NewCategoryField(
         controller: newCategoryController,
@@ -200,7 +213,11 @@ class _CategoryField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Category'),
+        Text(
+          'Category',
+          style: Theme.of(context).textTheme.titleSmall
+              ?.copyWith(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 8),
         SegmentedButton<_CategoryMode>(
           key: const ValueKey('category-mode-selector'),

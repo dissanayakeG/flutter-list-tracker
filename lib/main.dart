@@ -8,6 +8,7 @@ import 'ui/add_entry/add_entry_page.dart';
 import 'ui/categories/categories_page.dart';
 import 'ui/dashboard/dashboard_page.dart';
 import 'ui/list_detail/list_detail_page.dart';
+import 'ui/theme/app_theme.dart';
 
 void main() {
   runApp(const ProviderScope(child: ListTrackerApp()));
@@ -49,12 +50,9 @@ class ListTrackerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp.router(
       title: 'List Tracker',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 6, 207, 221),
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
+      themeMode: ThemeMode.system,
       routerConfig: _router,
     );
   }

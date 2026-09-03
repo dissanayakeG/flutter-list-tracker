@@ -57,8 +57,23 @@ class _AddEntryPageState extends ConsumerState<AddEntryPage> {
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
             children: [
+              Text(
+                _isEditing ? 'Update your entry' : 'Add an entry',
+                style: Theme.of(context).textTheme.headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _isEditing
+                    ? 'Keep the details current so your list stays useful.'
+                    : 'Capture a thought, task, or note for this list.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 24),
               TextFormField(
                 key: const ValueKey('entry-content-field'),
                 controller: _contentController,
@@ -190,7 +205,11 @@ class _DateField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Date (optional)'),
+        Text(
+          'Date (optional)',
+          style: Theme.of(context).textTheme.titleSmall
+              ?.copyWith(fontWeight: FontWeight.w700),
+        ),
         const SizedBox(height: 8),
         Row(
           children: [

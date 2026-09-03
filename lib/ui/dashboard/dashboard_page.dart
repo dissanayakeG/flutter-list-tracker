@@ -34,7 +34,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         actions: [
           IconButton(
             onPressed: () => context.push('/categories'),
-            icon: const Icon(Icons.folder_outlined),
+            icon: const Icon(Icons.category_outlined),
             tooltip: 'Manage categories',
           ),
           if (_isImporting)
@@ -69,26 +69,29 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
             ),
         ],
       ),
-      body: Column(
-        children: [
-          _CategoryFilter(
-            categories: categories,
-            selectedCategoryId: _selectedCategoryId,
-            onCategorySelected: (categoryId) {
-              setState(() => _selectedCategoryId = categoryId);
-            },
-          ),
-          Expanded(
-            child: listSummaries.when(
-              data: (summaries) => _ListCards(
-                summaries: _filterSummaries(summaries),
-                hasActiveFilter: _selectedCategoryId != null,
-              ),
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, stackTrace) => _LoadError(error: error),
+      body: SafeArea(
+        child: Column(
+          children: [
+            const _DashboardIntro(),
+            _CategoryFilter(
+              categories: categories,
+              selectedCategoryId: _selectedCategoryId,
+              onCategorySelected: (categoryId) {
+                setState(() => _selectedCategoryId = categoryId);
+              },
             ),
-          ),
-        ],
+            Expanded(
+              child: listSummaries.when(
+                data: (summaries) => _ListCards(
+                  summaries: _filterSummaries(summaries),
+                  hasActiveFilter: _selectedCategoryId != null,
+                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (error, stackTrace) => _LoadError(error: error),
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/add-list'),
@@ -204,22 +207,24 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('Import CSV'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (preview.listsToCreate.isNotEmpty) ...[
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (preview.listsToCreate.isNotEmpty) ...[
+                    Text(
+                      'Lists to create: '
+                      '${preview.listsToCreate.map((item) => item.displayName).join(', ')}',
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   Text(
-                    'Lists to create: '
-                    '${preview.listsToCreate.map((item) => item.displayName).join(', ')}',
+                    'Entries to add: ${preview.entriesToAdd}\n'
+                    'Exact entries to skip: ${preview.entriesToSkip}',
                   ),
-                  const SizedBox(height: 16),
                 ],
-                Text(
-                  'Entries to add: ${preview.entriesToAdd}\n'
-                  'Exact entries to skip: ${preview.entriesToSkip}',
-                ),
-              ],
+              ),
             ),
             actions: [
               TextButton(
@@ -303,7 +308,7 @@ class _CategoryFilter extends StatelessWidget {
 
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
           child: Row(
             children: [
               ChoiceChip(
@@ -340,9 +345,48 @@ class _ListCards extends StatelessWidget {
   Widget build(BuildContext context) {
     if (summaries.isEmpty) {
       return Center(
-        child: Text(
-          hasActiveFilter ? 'No lists in this category.' : 'No lists yet.',
-          textAlign: TextAlign.center,
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  shape: BoxShape.circle,
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(18),
+                  child: Icon(
+                    hasActiveFilter
+                        ? Icons.filter_alt_off_outlined
+                        : Icons.checklist_outlined,
+                    size: 32,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                hasActiveFilter
+                    ? 'No lists in this category.'
+                    : 'No lists yet.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleMedium
+                    ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              if (!hasActiveFilter) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Create a list to start keeping track of what matters.',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       );
     }
@@ -366,8 +410,69 @@ class _ListCard extends StatelessWidget {
     return Card(
       child: ListTile(
         onTap: () => context.push('/lists/${summary.list.id}'),
-        title: Text(summary.list.name),
-        subtitle: Text(summary.category.name),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        leading: DecoratedBox(
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: Icon(
+              Icons.checklist_outlined,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+          ),
+        ),
+        title: Text(
+          summary.list.name,
+          style: Theme.of(context).textTheme.titleMedium
+              ?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            summary.category.name,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        trailing: const Icon(Icons.chevron_right),
+      ),
+    );
+  }
+}
+
+class _DashboardIntro extends StatelessWidget {
+  const _DashboardIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    final textTheme = Theme.of(context).textTheme;
+    final colors = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your lists',
+              style: textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'A simple place for the things you want to remember.',
+              style: textTheme.bodyMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -381,11 +486,22 @@ class _LoadError extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(
-          'Unable to load lists: $error',
-          textAlign: TextAlign.center,
+      child: Card(
+        margin: const EdgeInsets.all(24),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.cloud_off_outlined,
+                size: 32,
+                color: Theme.of(context).colorScheme.error,
+              ),
+              const SizedBox(height: 12),
+              Text('Unable to load lists: $error', textAlign: TextAlign.center),
+            ],
+          ),
         ),
       ),
     );
