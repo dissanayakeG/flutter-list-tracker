@@ -45,6 +45,39 @@ void main() {
     },
   );
 
+  test('updates a list name, note, and category', () async {
+    final reading = await repository.createOrGetCategory(name: 'Reading');
+    final plans = await repository.createOrGetCategory(name: 'Plans');
+    final list = await repository.createList(
+      categoryId: reading.id,
+      name: 'Books to finish',
+      note: 'This month',
+    );
+
+    expect(
+      await repository.updateList(
+        id: list.id,
+        categoryId: plans.id,
+        name: '  Weekend plans ',
+        note: '  Plan ahead ',
+      ),
+      isTrue,
+    );
+
+    final updated = await repository.watchList(list.id).first;
+    expect(updated!.category.id, plans.id);
+    expect(updated.list.name, 'Weekend plans');
+    expect(updated.list.note, 'Plan ahead');
+    expect(
+      await repository.updateList(
+        id: 999,
+        categoryId: plans.id,
+        name: 'Missing',
+      ),
+      isFalse,
+    );
+  });
+
   test(
     'keeps UUIDs internal and creates a human-readable export snapshot',
     () async {

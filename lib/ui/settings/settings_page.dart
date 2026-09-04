@@ -34,9 +34,14 @@ class SettingsPage extends ConsumerWidget {
       body: SafeArea(
         child: ListView(
           children: [
-            _ThemeSelectionTile(context, colors: colors, themeMode: themeMode),
-
-            _CategoryListTile(context),
+            _ThemeSelectionTile(
+              colors: colors,
+              themeMode: themeMode,
+              onSelected: (value) {
+                ref.read(appThemeModeProvider.notifier).update(value);
+              },
+            ),
+            const _CategoryListTile(),
           ],
         ),
       ),
@@ -44,22 +49,19 @@ class SettingsPage extends ConsumerWidget {
   }
 }
 
-class _ThemeSelectionTile extends ConsumerWidget {
-  const _ThemeSelectionTile(
-    this.context, {
-    super.key,
+class _ThemeSelectionTile extends StatelessWidget {
+  const _ThemeSelectionTile({
     required this.colors,
     required this.themeMode,
+    required this.onSelected,
   });
 
-  final BuildContext context;
   final ColorScheme colors;
   final ThemeMode themeMode;
+  final ValueChanged<ThemeMode> onSelected;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(appThemeModeProvider);
-
+  Widget build(BuildContext context) {
     return ListTile(
       title: const Text('Theme'),
       trailing: PopupMenuButton<ThemeMode>(
@@ -74,7 +76,7 @@ class _ThemeSelectionTile extends ConsumerWidget {
         borderRadius: BorderRadius.circular(14),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         onSelected: (value) {
-          ref.read(appThemeModeProvider.notifier).update(value);
+          onSelected(value);
         },
         itemBuilder: (context) => [
           CheckedPopupMenuItem(
@@ -124,13 +126,11 @@ class _ThemeSelectionTile extends ConsumerWidget {
   }
 }
 
-class _CategoryListTile extends ConsumerWidget {
-  const _CategoryListTile(this.context, {super.key});
-
-  final BuildContext context;
+class _CategoryListTile extends StatelessWidget {
+  const _CategoryListTile();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return ListTile(
       title: const Text('Categories'),
       trailing: const Icon(Icons.chevron_right),

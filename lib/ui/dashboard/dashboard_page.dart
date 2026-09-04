@@ -453,7 +453,11 @@ class _ListCard extends StatelessWidget {
             ),
           ),
         ),
-        trailing: const Icon(Icons.chevron_right),
+        trailing: IconButton(
+          tooltip: 'Edit list',
+          onPressed: () => context.push('/lists/${summary.list.id}/edit'),
+          icon: const Icon(Icons.edit_outlined),
+        ),
       ),
     );
   }

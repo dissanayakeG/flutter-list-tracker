@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:list_tracker/ui/add_list/edit_list_page.dart';
 
 import 'data/local/app_database.dart';
 import 'ui/add_list/add_list_page.dart';
@@ -29,6 +30,12 @@ final _router = GoRouter(
       path: '/lists/:listId',
       builder: (_, state) =>
           ListDetailPage(listId: int.parse(state.pathParameters['listId']!)),
+    ),
+    GoRoute(
+      path: '/lists/:listId/edit',
+      builder: (_, state) => EditListPage(
+        listId: int.parse(state.pathParameters['listId']!),
+      ),
     ),
     GoRoute(
       path: '/lists/:listId/add-entry',

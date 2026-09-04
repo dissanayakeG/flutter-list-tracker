@@ -9,15 +9,18 @@ import 'package:list_tracker/data/repository/list_tracker_repository.dart';
 import 'package:list_tracker/data/repository/repository_providers.dart';
 import 'package:list_tracker/ui/categories/categories_page.dart';
 import 'package:list_tracker/ui/dashboard/dashboard_page.dart';
+import 'package:list_tracker/ui/settings/settings_page.dart';
 
 void main() {
-  testWidgets('opens Category Management from the Dashboard', (tester) async {
+  testWidgets('opens Category Management from Settings', (tester) async {
     final repository = _CategoryRepository();
     addTearDown(repository.dispose);
 
     await _pumpCategoryFlow(tester, repository: repository);
 
-    await tester.tap(find.byTooltip('Manage categories'));
+    await tester.tap(find.byTooltip('Settings'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Categories'));
     await tester.pumpAndSettle();
 
     expect(find.text('Categories'), findsOneWidget);
@@ -107,6 +110,7 @@ Future<void> _pumpCategoryFlow(
     initialLocation: initialLocation,
     routes: [
       GoRoute(path: '/', builder: (_, _) => const DashboardPage()),
+      GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
       GoRoute(path: '/categories', builder: (_, _) => const CategoriesPage()),
       GoRoute(
         path: '/categories/add',

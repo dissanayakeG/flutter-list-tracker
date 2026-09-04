@@ -49,6 +49,13 @@ abstract interface class ListTrackerRepository {
     required DateTime? date,
   });
   Future<bool> deleteEntry(int id);
+
+  Future<bool> updateList({
+    required int id,
+    required int categoryId,
+    required String name,
+    String? note,
+  });
 }
 
 class DriftListTrackerRepository implements ListTrackerRepository {
@@ -298,6 +305,26 @@ class DriftListTrackerRepository implements ListTrackerRepository {
             content: Value(_requiredText(content, 'content')),
             date: Value(_dateOnly(date)),
             updatedAt: Value(DateTime.now()),
+          ),
+        );
+    return updatedRows == 1;
+  }
+
+  @override
+  Future<bool> updateList({
+    required int id,
+    required int categoryId,
+    required String name,
+    String? note,
+  }) async {
+    final updatedRows =
+        await (_database.update(
+          _database.listModels,
+        )..where((table) => table.id.equals(id))).write(
+          ListModelsCompanion(
+            categoryId: Value(categoryId),
+            name: Value(_requiredText(name, 'name')),
+            note: Value(_optionalText(note)),
           ),
         );
     return updatedRows == 1;
