@@ -18,7 +18,11 @@ class ListWithCategory {
 abstract interface class ListTrackerRepository {
   Stream<List<Category>> watchCategories();
   Future<List<Category>> getCategories();
+  Future<Category?> getCategory(int id);
   Future<Category> createOrGetCategory({required String name});
+  Future<bool> updateCategory({required int id, required String name});
+  Future<bool> isCategoryInUse(int id);
+  Future<bool> deleteCategory(int id);
   Future<ListTrackerExportSnapshot> getExportSnapshot();
   Future<CsvImportPreview> previewCsvImport(CsvImportDocument document);
   Future<CsvImportResult> importCsvEntries(CsvImportDocument document);
@@ -80,6 +84,13 @@ class DriftListTrackerRepository implements ListTrackerRepository {
   }
 
   @override
+  Future<Category?> getCategory(int id) {
+    return (_database.select(
+      _database.categories,
+    )..where((table) => table.id.equals(id))).getSingleOrNull();
+  }
+
+  @override
   Future<Category> createOrGetCategory({required String name}) {
     final normalizedName = _requiredText(name, 'name');
 
@@ -98,6 +109,37 @@ class DriftListTrackerRepository implements ListTrackerRepository {
         _database.categories,
       )..where((table) => table.id.equals(id))).getSingle();
     });
+  }
+
+  @override
+  Future<bool> updateCategory({required int id, required String name}) async {
+    final updatedRows =
+        await (_database.update(
+          _database.categories,
+        )..where((table) => table.id.equals(id))).write(
+          CategoriesCompanion(name: Value(_requiredText(name, 'name'))),
+        );
+    return updatedRows == 1;
+  }
+
+  @override
+  Future<bool> isCategoryInUse(int id) async {
+    final list = await (_database.select(
+      _database.listModels,
+    )..where((table) => table.categoryId.equals(id))).getSingleOrNull();
+    return list != null;
+  }
+
+  @override
+  Future<bool> deleteCategory(int id) async {
+    if (await isCategoryInUse(id)) {
+      return false;
+    }
+
+    final deletedRows = await (_database.delete(
+      _database.categories,
+    )..where((table) => table.id.equals(id))).go();
+    return deletedRows == 1;
   }
 
   @override

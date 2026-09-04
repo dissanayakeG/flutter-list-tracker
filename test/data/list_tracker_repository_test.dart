@@ -45,6 +45,29 @@ void main() {
     },
   );
 
+  test(
+    'updates categories and prevents deleting categories that contain lists',
+    () async {
+      final reading = await repository.createOrGetCategory(name: 'Reading');
+      final empty = await repository.createOrGetCategory(name: 'Empty');
+
+      expect(
+        await repository.updateCategory(id: reading.id, name: '  Books  '),
+        isTrue,
+      );
+      expect((await repository.getCategory(reading.id))!.name, 'Books');
+      expect(await repository.isCategoryInUse(reading.id), isFalse);
+
+      await repository.createList(categoryId: reading.id, name: 'To read');
+      expect(await repository.isCategoryInUse(reading.id), isTrue);
+      expect(await repository.deleteCategory(reading.id), isFalse);
+      expect(await repository.getCategory(reading.id), isNotNull);
+
+      expect(await repository.deleteCategory(empty.id), isTrue);
+      expect(await repository.getCategory(empty.id), isNull);
+    },
+  );
+
   test('updates a list name, note, and category', () async {
     final reading = await repository.createOrGetCategory(name: 'Reading');
     final plans = await repository.createOrGetCategory(name: 'Plans');

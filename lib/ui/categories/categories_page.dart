@@ -1,22 +1,99 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:list_tracker/ui/common/destructive_confirmation_dialog.dart';
 
 import '../../data/local/app_database.dart';
 import '../../data/repository/repository_providers.dart';
 
-class CategoriesPage extends ConsumerWidget {
+class CategoriesPage extends ConsumerStatefulWidget {
   const CategoriesPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CategoriesPage> createState() => _CategoriesPageState();
+}
+
+class _CategoriesPageState extends ConsumerState<CategoriesPage> {
+  bool _isDeleting = false;
+
+  Future<void> _deleteCategory(Category category) async {
+    final repository = ref.read(listTrackerRepositoryProvider);
+
+    setState(() => _isDeleting = true);
+
+    try {
+      if (await repository.isCategoryInUse(category.id)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'Delete or move this category’s lists before deleting it.',
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
+      if (!mounted) {
+        return;
+      }
+
+      final confirmed = await DestructiveConfirmationDialog.show(
+        context,
+        title: 'Delete “${category.name}”?',
+        message:
+            'This permanently deletes this empty category. '
+            'This action cannot be undone.',
+      );
+      if (!confirmed || !mounted) {
+        return;
+      }
+
+      final success = await repository.deleteCategory(category.id);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Category deleted.'
+                : 'The category is no longer available.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to delete category. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final categories = ref.watch(categoriesProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Categories')),
+
       body: categories.when(
-        data: _CategoryList.new,
+        data: (categories) => _CategoryList(
+          categories: categories,
+          isDeleting: _isDeleting,
+          onDelete: _deleteCategory,
+        ),
+
         loading: () => const Center(child: CircularProgressIndicator()),
+
         error: (_, _) => const Center(
           child: _CategoryState(
             icon: Icons.cloud_off_outlined,
@@ -36,9 +113,15 @@ class CategoriesPage extends ConsumerWidget {
 }
 
 class _CategoryList extends StatelessWidget {
-  const _CategoryList(this.categories);
+  const _CategoryList({
+    required this.categories,
+    required this.isDeleting,
+    required this.onDelete,
+  });
 
   final List<Category> categories;
+  final bool isDeleting;
+  final Future<void> Function(Category category) onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +161,29 @@ class _CategoryList extends StatelessWidget {
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
               ),
+            ),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  key: ValueKey('edit-category-${category.id}'),
+                  onPressed: isDeleting
+                      ? null
+                      : () => context.push('/categories/${category.id}/edit'),
+                  icon: const Icon(Icons.edit_outlined),
+                  tooltip: 'Edit category',
+                ),
+
+                IconButton(
+                  key: ValueKey('delete-category-${category.id}'),
+                  tooltip: 'Delete category',
+                  style: IconButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.error,
+                  ),
+                  onPressed: isDeleting ? null : () => onDelete(category),
+                  icon: const Icon(Icons.delete_outlined),
+                ),
+              ],
             ),
             title: Text(
               category.name,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:list_tracker/ui/add_list/edit_list_page.dart';
+import 'package:list_tracker/ui/categories/edit_category_page.dart';
 
 import 'data/local/app_database.dart';
 import 'ui/add_list/add_list_page.dart';
@@ -25,6 +26,12 @@ final _router = GoRouter(
     GoRoute(
       path: '/categories/add',
       builder: (_, _) => const AddCategoryPage(),
+    ),
+    GoRoute(
+      path: '/categories/:categoryId/edit',
+      builder: (_, state) => EditCategoryPage(
+        categoryId: int.parse(state.pathParameters['categoryId']!),
+      ),
     ),
     GoRoute(
       path: '/lists/:listId',
