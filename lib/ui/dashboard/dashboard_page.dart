@@ -355,48 +355,57 @@ class _ListCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (summaries.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Icon(
-                    hasActiveFilter
-                        ? Icons.filter_alt_off_outlined
-                        : Icons.checklist_outlined,
-                    size: 32,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
+      return LayoutBuilder(
+        builder: (context, constraints) => SingleChildScrollView(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.primaryContainer,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(18),
+                        child: Icon(
+                          hasActiveFilter
+                              ? Icons.filter_alt_off_outlined
+                              : Icons.checklist_outlined,
+                          size: 32,
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Text(
+                      hasActiveFilter
+                          ? 'No lists in this category.'
+                          : 'No lists yet.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    if (!hasActiveFilter) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Create a list to start keeping track of what matters.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
-              const SizedBox(height: 20),
-              Text(
-                hasActiveFilter
-                    ? 'No lists in this category.'
-                    : 'No lists yet.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              if (!hasActiveFilter) ...[
-                const SizedBox(height: 8),
-                Text(
-                  'Create a list to start keeping track of what matters.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       );

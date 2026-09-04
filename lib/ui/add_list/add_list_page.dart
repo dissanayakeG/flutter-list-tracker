@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +8,8 @@ import '../../data/local/app_database.dart';
 import '../../data/repository/repository_providers.dart';
 
 enum _CategoryMode { existing, newCategory }
+
+const _categoryDropdownMenuMaxWidth = 280.0;
 
 class AddListPage extends ConsumerStatefulWidget {
   const AddListPage({super.key});
@@ -219,44 +223,42 @@ class _CategoryField extends StatelessWidget {
               ?.copyWith(fontWeight: FontWeight.w700),
         ),
         const SizedBox(height: 8),
-        SegmentedButton<_CategoryMode>(
-          key: const ValueKey('category-mode-selector'),
-          segments: const [
-            ButtonSegment(
-              value: _CategoryMode.existing,
-              label: Text('Existing'),
-              icon: Icon(Icons.folder_outlined),
-            ),
-            ButtonSegment(
-              value: _CategoryMode.newCategory,
-              label: Text('New category'),
-              icon: Icon(Icons.create_new_folder_outlined),
-            ),
-          ],
-          selected: {categoryMode},
-          onSelectionChanged: enabled
-              ? (selection) => onCategoryModeChanged(selection.first)
-              : null,
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final usesLargeText =
+                MediaQuery.textScalerOf(context).scale(14) >= 18;
+            final usesVerticalLayout =
+                usesLargeText || constraints.maxWidth < 300;
+
+            return SegmentedButton<_CategoryMode>(
+              key: const ValueKey('category-mode-selector'),
+              direction: usesVerticalLayout ? Axis.vertical : Axis.horizontal,
+              segments: const [
+                ButtonSegment(
+                  value: _CategoryMode.existing,
+                  label: Text('Existing'),
+                  icon: Icon(Icons.folder_outlined),
+                ),
+                ButtonSegment(
+                  value: _CategoryMode.newCategory,
+                  label: Text('New category'),
+                  icon: Icon(Icons.create_new_folder_outlined),
+                ),
+              ],
+              selected: {categoryMode},
+              onSelectionChanged: enabled
+                  ? (selection) => onCategoryModeChanged(selection.first)
+                  : null,
+            );
+          },
         ),
         const SizedBox(height: 12),
         if (categoryMode == _CategoryMode.existing)
-          DropdownButtonFormField<int>(
-            key: const ValueKey('existing-category-dropdown'),
-            initialValue: selectedCategoryId,
-            decoration: const InputDecoration(
-              labelText: 'Existing category',
-              border: OutlineInputBorder(),
-            ),
-            hint: const Text('Choose a category'),
-            items: [
-              for (final category in categories)
-                DropdownMenuItem(
-                  value: category.id,
-                  child: Text(category.name),
-                ),
-            ],
-            onChanged: enabled ? onSelectedCategoryChanged : null,
-            validator: (value) => value == null ? 'Choose a category.' : null,
+          _ExistingCategoryDropdown(
+            categories: categories,
+            selectedCategoryId: selectedCategoryId,
+            enabled: enabled,
+            onChanged: onSelectedCategoryChanged,
           )
         else
           _NewCategoryField(
@@ -264,6 +266,75 @@ class _CategoryField extends StatelessWidget {
             enabled: enabled,
           ),
       ],
+    );
+  }
+}
+
+class _ExistingCategoryDropdown extends StatelessWidget {
+  const _ExistingCategoryDropdown({
+    required this.categories,
+    required this.selectedCategoryId,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final List<Category> categories;
+  final int? selectedCategoryId;
+  final bool enabled;
+  final ValueChanged<int?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final menuWidth = math.min(
+          _categoryDropdownMenuMaxWidth,
+          constraints.maxWidth,
+        );
+
+        return FormField<int>(
+          initialValue: selectedCategoryId,
+          validator: (value) => value == null ? 'Choose a category.' : null,
+          builder: (field) {
+            return InputDecorator(
+              key: const ValueKey('existing-category-input'),
+              decoration: const InputDecoration(
+                labelText: 'Existing category',
+                border: OutlineInputBorder(),
+              ).copyWith(errorText: field.errorText),
+              // The dropdown's hint occupies the field when no category is
+              // selected, so the label must remain floating to avoid overlap.
+              isEmpty: false,
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<int>(
+                  key: const ValueKey('existing-category-dropdown'),
+                  value: selectedCategoryId,
+                  isExpanded: true,
+                  menuWidth: menuWidth,
+                  hint: const Text('Choose a category'),
+                  items: [
+                    for (final category in categories)
+                      DropdownMenuItem(
+                        value: category.id,
+                        child: Text(
+                          category.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
+                  onChanged: enabled
+                      ? (value) {
+                          field.didChange(value);
+                          onChanged(value);
+                        }
+                      : null,
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }

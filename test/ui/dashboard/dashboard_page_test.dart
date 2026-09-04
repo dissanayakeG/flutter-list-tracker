@@ -13,6 +13,41 @@ import 'package:list_tracker/main.dart';
 import 'package:list_tracker/ui/dashboard/dashboard_page.dart';
 
 void main() {
+  testWidgets('renders on a narrow display with large system text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const category = Category(
+      id: 1,
+      externalId: 'meal-category',
+      name: 'Meal Plans',
+    );
+    final repository = _FakeRepository(categories: const [category]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          listTrackerRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(1.5)),
+            child: child!,
+          ),
+          home: const DashboardPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('shows list cards and filters them by category', (tester) async {
     const meals = Category(
       id: 1,

@@ -1,5 +1,10 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+const _themeMenuMaxWidth = 160.0;
+const _pageHorizontalGutter = 20.0;
 
 final appThemeModeProvider = NotifierProvider<ThemeModeNotifier, ThemeMode>(
   ThemeModeNotifier.new,
@@ -20,6 +25,11 @@ class SettingsPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(appThemeModeProvider);
+    final availableMenuWidth = math.max(
+      0.0,
+      MediaQuery.sizeOf(context).width - (_pageHorizontalGutter * 2),
+    );
+    final menuWidth = math.min(_themeMenuMaxWidth, availableMenuWidth);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -30,6 +40,7 @@ class SettingsPage extends ConsumerWidget {
               title: const Text('Theme'),
               trailing: DropdownButton<ThemeMode>(
                 value: themeMode,
+                menuWidth: menuWidth,
                 onChanged: (value) {
                   if (value != null) {
                     ref.read(appThemeModeProvider.notifier).update(value);

@@ -33,6 +33,25 @@ void main() {
 
     await tester.tap(find.text('Existing'));
     await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<InputDecorator>(
+            find.byKey(const ValueKey('existing-category-input')),
+          )
+          .isEmpty,
+      isFalse,
+    );
+
+    expect(
+      tester
+          .widget<DropdownButton<int>>(
+            find.byKey(const ValueKey('existing-category-dropdown')),
+          )
+          .menuWidth,
+      280,
+    );
+
     await tester.tap(find.byKey(const ValueKey('existing-category-dropdown')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Reading').last);
@@ -76,12 +95,55 @@ void main() {
     expect(repository.newCategoryRequest, ('Meal Plans', 'Weekday meals', ''));
     expect(find.text('Dashboard'), findsOneWidget);
   });
+
+  testWidgets('adapts category controls to narrow screens and large text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const reading = Category(
+      id: 1,
+      externalId: 'reading-category',
+      name: 'Reading',
+    );
+    await _pumpAddListPage(
+      tester,
+      _RecordingRepository(categories: const [reading]),
+      textScaler: TextScaler.linear(1.5),
+    );
+
+    expect(
+      tester
+          .widget<SegmentedButton>(
+            find.byKey(const ValueKey('category-mode-selector')),
+          )
+          .direction,
+      Axis.vertical,
+    );
+
+    await tester.tap(find.text('Existing'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(
+      tester
+          .widget<DropdownButton<int>>(
+            find.byKey(const ValueKey('existing-category-dropdown')),
+          )
+          .menuWidth,
+      280,
+    );
+  });
 }
 
 Future<void> _pumpAddListPage(
   WidgetTester tester,
-  ListTrackerRepository repository,
-) async {
+  ListTrackerRepository repository, {
+  TextScaler textScaler = TextScaler.noScaling,
+}) async {
   final router = GoRouter(
     initialLocation: '/add-list',
     routes: [
@@ -97,7 +159,13 @@ Future<void> _pumpAddListPage(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [listTrackerRepositoryProvider.overrideWithValue(repository)],
-      child: MaterialApp.router(routerConfig: router),
+      child: MaterialApp.router(
+        routerConfig: router,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          child: child!,
+        ),
+      ),
     ),
   );
   await tester.pumpAndSettle();
