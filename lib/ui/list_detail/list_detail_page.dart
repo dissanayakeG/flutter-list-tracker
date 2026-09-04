@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
 import '../../data/repository/repository_providers.dart';
+import '../common/destructive_confirmation_dialog.dart';
 
 class ListDetailPage extends ConsumerWidget {
   const ListDetailPage({required this.listId, super.key});
@@ -167,7 +168,9 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
               key: ValueKey('delete-entry-${widget.entry.id}'),
               tooltip: 'Delete entry',
               onPressed: _isDeleting ? null : _confirmAndDelete,
-              color: Theme.of(context).colorScheme.error,
+              style: IconButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
               icon: _isDeleting
                   ? const SizedBox(
                       width: 18,
@@ -183,26 +186,14 @@ class _EntryCardState extends ConsumerState<_EntryCard> {
   }
 
   Future<void> _confirmAndDelete() async {
-    final shouldDelete = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Delete entry?'),
-        content: const Text('This entry will be permanently removed.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            key: const ValueKey('confirm-delete-entry-button'),
-            onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final shouldDelete = await DestructiveConfirmationDialog.show(
+      context,
+      title: 'Delete entry?',
+      message: 'This entry will be permanently removed.',
+      confirmButtonKey: const ValueKey('confirm-delete-entry-button'),
     );
 
-    if (shouldDelete != true || !mounted) {
+    if (!shouldDelete || !mounted) {
       return;
     }
 

@@ -78,6 +78,23 @@ void main() {
     );
   });
 
+  test('deletes a list and cascades deletion to its entries', () async {
+    final list = await repository.createListInCategory(
+      categoryName: 'Reading',
+      name: 'Books to finish',
+    );
+    await repository.createEntry(
+      listId: list.id,
+      content: 'Read a chapter',
+      date: null,
+    );
+
+    expect(await repository.deleteList(list.id), isTrue);
+    expect(await repository.watchList(list.id).first, isNull);
+    expect(await repository.watchEntries(list.id).first, isEmpty);
+    expect(await repository.deleteList(list.id), isFalse);
+  });
+
   test(
     'keeps UUIDs internal and creates a human-readable export snapshot',
     () async {

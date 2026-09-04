@@ -105,6 +105,83 @@ void main() {
     expect(find.text('Weekday meals'), findsNothing);
   });
 
+  testWidgets('cancels list deletion from the confirmation dialog', (
+    tester,
+  ) async {
+    final repository = _FakeRepository(summaries: [_summary()]);
+
+    await _pumpDashboard(tester, repository);
+
+    await tester.tap(find.byTooltip('Delete list'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete “Weekday meals”?'), findsOneWidget);
+    expect(
+      find.text(
+        'This permanently deletes the list and every entry in it. '
+        'This action cannot be undone.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(repository.deletedListIds, isEmpty);
+  });
+
+  testWidgets(
+    'deletes a confirmed list with theme-derived destructive colors',
+    (tester) async {
+      final repository = _FakeRepository(summaries: [_summary()]);
+
+      await _pumpDashboard(tester, repository);
+
+      final colors = Theme.of(tester.element(find.byType(DashboardPage)))
+          .colorScheme;
+      final deleteIcon = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byTooltip('Delete list'),
+          matching: find.byType(IconButton),
+        ),
+      );
+      expect(deleteIcon.style!.foregroundColor!.resolve({}), colors.error);
+
+      await tester.tap(find.byTooltip('Delete list'));
+      await tester.pumpAndSettle();
+
+      final deleteButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Delete'),
+      );
+      expect(deleteButton.style!.backgroundColor!.resolve({}), colors.error);
+      expect(deleteButton.style!.foregroundColor!.resolve({}), colors.onError);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+
+      expect(repository.deletedListIds, [1]);
+      expect(find.text('List deleted.'), findsOneWidget);
+    },
+  );
+
+  testWidgets('reports an unsuccessful list deletion', (tester) async {
+    final repository = _FakeRepository(
+      summaries: [_summary()],
+      deleteListResult: false,
+    );
+
+    await _pumpDashboard(tester, repository);
+    await tester.tap(find.byTooltip('Delete list'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(repository.deletedListIds, [1]);
+    expect(
+      find.text('Unable to delete list. Please try again.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('shows an empty state and opens the Add New List form', (
     tester,
   ) async {
@@ -375,21 +452,61 @@ CsvImportReady _readyPreparation() {
   );
 }
 
+ListWithCategory _summary() {
+  const category = Category(
+    id: 1,
+    externalId: 'meal-category',
+    name: 'Meal Plans',
+  );
+  return ListWithCategory(
+    list: ListModel(
+      id: 1,
+      externalId: 'weekday-meals',
+      categoryId: category.id,
+      name: 'Weekday meals',
+      createdAt: DateTime(2026),
+    ),
+    category: category,
+  );
+}
+
+Future<void> _pumpDashboard(
+  WidgetTester tester,
+  ListTrackerRepository repository,
+) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [listTrackerRepositoryProvider.overrideWithValue(repository)],
+      child: const MaterialApp(home: DashboardPage()),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
 class _FakeRepository implements ListTrackerRepository {
   _FakeRepository({
     List<Category> categories = const [],
     List<ListWithCategory> summaries = const [],
+    this.deleteListResult = true,
   }) : _categories = List.unmodifiable(categories),
        _summaries = List.unmodifiable(summaries);
 
   final List<Category> _categories;
   final List<ListWithCategory> _summaries;
+  final bool deleteListResult;
+  final deletedListIds = <int>[];
 
   @override
   Stream<List<Category>> watchCategories() => Stream.value(_categories);
 
   @override
   Stream<List<ListWithCategory>> watchLists() => Stream.value(_summaries);
+
+  @override
+  Future<bool> deleteList(int id) async {
+    deletedListIds.add(id);
+    return deleteListResult;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

@@ -34,6 +34,7 @@ class EditListPage extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back),
         ),
       ),
+
       body: SafeArea(
         child: listDetailAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),

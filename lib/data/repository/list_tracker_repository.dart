@@ -56,6 +56,8 @@ abstract interface class ListTrackerRepository {
     required String name,
     String? note,
   });
+
+  Future<bool> deleteList(int id);
 }
 
 class DriftListTrackerRepository implements ListTrackerRepository {
@@ -328,6 +330,14 @@ class DriftListTrackerRepository implements ListTrackerRepository {
           ),
         );
     return updatedRows == 1;
+  }
+
+  @override
+  Future<bool> deleteList(int id) async {
+    final deletedRows = await (_database.delete(
+      _database.listModels,
+    )..where((table) => table.id.equals(id))).go();
+    return deletedRows == 1;
   }
 
   @override

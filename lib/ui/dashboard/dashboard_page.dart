@@ -10,6 +10,7 @@ import '../../data/transfer/csv_export_service.dart';
 import '../../data/transfer/csv_import_models.dart';
 import '../../data/transfer/csv_import_providers.dart';
 import '../../data/transfer/csv_import_service.dart';
+import '../common/destructive_confirmation_dialog.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -22,6 +23,41 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   int? _selectedCategoryId;
   var _isExporting = false;
   var _isImporting = false;
+  bool _isDeleting = false;
+
+  Future<void> _deleteList({required int listId}) async {
+    final repository = ref.read(listTrackerRepositoryProvider);
+
+    setState(() => _isDeleting = true);
+
+    try {
+      final success = await repository.deleteList(listId);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'List deleted.'
+                : 'Unable to delete list. Please try again.',
+          ),
+        ),
+      );
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to delete list. Please try again.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -89,6 +125,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 ///When the data is ready, summaries is the actual list:
                 data: (summaries) => _ListCards(
                   summaries: _filterSummaries(summaries),
+                  isDeleting: _isDeleting,
+                  onDelete: _deleteList,
                   hasActiveFilter: _selectedCategoryId != null,
                 ),
                 loading: () => const Center(child: CircularProgressIndicator()),
@@ -342,9 +380,16 @@ class _CategoryFilter extends StatelessWidget {
 }
 
 class _ListCards extends StatelessWidget {
-  const _ListCards({required this.summaries, required this.hasActiveFilter});
+  const _ListCards({
+    required this.summaries,
+    required this.isDeleting,
+    required this.onDelete,
+    required this.hasActiveFilter,
+  });
 
   final List<ListWithCategory> summaries;
+  final bool isDeleting;
+  final void Function({required int listId}) onDelete;
   final bool hasActiveFilter;
 
   @override
@@ -410,21 +455,33 @@ class _ListCards extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
       itemCount: summaries.length,
       separatorBuilder: (_, _) => const SizedBox(height: 8),
-      itemBuilder: (context, index) => _ListCard(summary: summaries[index]),
+      itemBuilder: (context, index) => _ListCard(
+        summary: summaries[index],
+        isDeleting: isDeleting,
+        onDelete: onDelete,
+      ),
     );
   }
 }
 
 class _ListCard extends StatelessWidget {
-  const _ListCard({required this.summary});
+  const _ListCard({
+    required this.summary,
+    required this.isDeleting,
+    required this.onDelete,
+  });
 
   final ListWithCategory summary;
+  final bool isDeleting;
+  final void Function({required int listId}) onDelete;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        onTap: () => context.push('/lists/${summary.list.id}'),
+        onTap: isDeleting
+            ? null
+            : () => context.push('/lists/${summary.list.id}'),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: DecoratedBox(
           decoration: BoxDecoration(
@@ -453,13 +510,43 @@ class _ListCard extends StatelessWidget {
             ),
           ),
         ),
-        trailing: IconButton(
-          tooltip: 'Edit list',
-          onPressed: () => context.push('/lists/${summary.list.id}/edit'),
-          icon: const Icon(Icons.edit_outlined),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              tooltip: 'Edit list',
+              onPressed: isDeleting
+                  ? null
+                  : () => context.push('/lists/${summary.list.id}/edit'),
+              icon: const Icon(Icons.edit_outlined),
+            ),
+
+            IconButton(
+              tooltip: 'Delete list',
+              style: IconButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+              ),
+              onPressed: isDeleting ? null : () => _confirmDelete(context),
+              icon: const Icon(Icons.delete_outlined),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await DestructiveConfirmationDialog.show(
+      context,
+      title: 'Delete “${summary.list.name}”?',
+      message:
+          'This permanently deletes the list and every entry in it. '
+          'This action cannot be undone.',
+    );
+
+    if (confirmed) {
+      onDelete(listId: summary.list.id);
+    }
   }
 }
 

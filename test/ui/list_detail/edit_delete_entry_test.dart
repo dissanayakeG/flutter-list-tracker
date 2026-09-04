@@ -86,9 +86,22 @@ void main() {
 
     await _pumpListDetail(tester, repository);
 
+    final colors = Theme.of(tester.element(find.byType(ListDetailPage)))
+        .colorScheme;
+    final deleteIcon = tester.widget<IconButton>(
+      find.byKey(const ValueKey('delete-entry-1')),
+    );
+    expect(deleteIcon.style!.foregroundColor!.resolve({}), colors.error);
+
     await tester.tap(find.byKey(const ValueKey('delete-entry-1')));
     await tester.pumpAndSettle();
     expect(find.text('Delete entry?'), findsOneWidget);
+
+    final deleteButton = tester.widget<FilledButton>(
+      find.byKey(const ValueKey('confirm-delete-entry-button')),
+    );
+    expect(deleteButton.style!.backgroundColor!.resolve({}), colors.error);
+    expect(deleteButton.style!.foregroundColor!.resolve({}), colors.onError);
 
     await tester.tap(find.text('Cancel'));
     await tester.pumpAndSettle();
