@@ -96,6 +96,54 @@ void main() {
     expect(find.text('Dashboard'), findsOneWidget);
   });
 
+  testWidgets('aligns the category selector with form fields', (tester) async {
+    const reading = Category(
+      id: 1,
+      externalId: 'reading-category',
+      name: 'Reading',
+    );
+    await _pumpAddListPage(
+      tester,
+      _RecordingRepository(categories: const [reading]),
+    );
+
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('category-mode-selector')))
+          .width,
+      tester.getSize(find.byKey(const ValueKey('new-category-field'))).width,
+    );
+  });
+
+  testWidgets('caps wide form content while keeping controls aligned', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const reading = Category(
+      id: 1,
+      externalId: 'reading-category',
+      name: 'Reading',
+    );
+    await _pumpAddListPage(
+      tester,
+      _RecordingRepository(categories: const [reading]),
+    );
+
+    final selectorWidth = tester
+        .getSize(find.byKey(const ValueKey('category-mode-selector')))
+        .width;
+    final fieldWidth = tester
+        .getSize(find.byKey(const ValueKey('new-category-field')))
+        .width;
+
+    expect(selectorWidth, fieldWidth);
+    expect(fieldWidth, closeTo(600, 0.1));
+  });
+
   testWidgets('adapts category controls to narrow screens and large text', (
     tester,
   ) async {
@@ -135,6 +183,14 @@ void main() {
           )
           .menuWidth,
       280,
+    );
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('category-mode-selector')))
+          .width,
+      tester
+          .getSize(find.byKey(const ValueKey('existing-category-input')))
+          .width,
     );
   });
 }

@@ -10,6 +10,7 @@ import '../../data/repository/repository_providers.dart';
 enum _CategoryMode { existing, newCategory }
 
 const _categoryDropdownMenuMaxWidth = 280.0;
+const _formMaxWidth = 640.0;
 
 class AddListPage extends ConsumerStatefulWidget {
   const AddListPage({super.key});
@@ -56,80 +57,95 @@ class _AddListPageState extends ConsumerState<AddListPage> {
         ),
       ),
       body: SafeArea(
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-            children: [
-              Text(
-                'Build a new list',
-                style: Theme.of(context).textTheme.headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Choose where this list belongs and give it a clear name.',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final formWidth = math.min(constraints.maxWidth, _formMaxWidth);
+
+            return Align(
+              alignment: Alignment.topCenter,
+              child: SizedBox(
+                width: formWidth,
+                height: constraints.maxHeight,
+                child: Form(
+                  key: _formKey,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                    children: [
+                      Text(
+                        'Build a new list',
+                        style: Theme.of(context).textTheme.headlineSmall
+                            ?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Choose where this list belongs and give it a clear name.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      _CategoryField(
+                        categories: categories,
+                        categoryMode: _categoryMode,
+                        selectedCategoryId: _selectedCategoryId,
+                        newCategoryController: _newCategoryController,
+                        enabled: !_isSaving,
+                        onCategoryModeChanged: (mode) {
+                          setState(() {
+                            _categoryMode = mode;
+                            _selectedCategoryId = null;
+                          });
+                        },
+                        onSelectedCategoryChanged: (categoryId) {
+                          setState(() => _selectedCategoryId = categoryId);
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        key: const ValueKey('list-name-field'),
+                        controller: _listNameController,
+                        enabled: !_isSaving,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: const InputDecoration(
+                          labelText: 'List Name',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: _requiredTextValidator,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
+                        key: const ValueKey('note-field'),
+                        controller: _noteController,
+                        enabled: !_isSaving,
+                        textCapitalization: TextCapitalization.sentences,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Note (optional)',
+                          alignLabelWithHint: true,
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      FilledButton.icon(
+                        key: const ValueKey('save-list-button'),
+                        onPressed: _isSaving ? null : _save,
+                        icon: _isSaving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.save),
+                        label: Text(_isSaving ? 'Saving...' : 'Save'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 24),
-              _CategoryField(
-                categories: categories,
-                categoryMode: _categoryMode,
-                selectedCategoryId: _selectedCategoryId,
-                newCategoryController: _newCategoryController,
-                enabled: !_isSaving,
-                onCategoryModeChanged: (mode) {
-                  setState(() {
-                    _categoryMode = mode;
-                    _selectedCategoryId = null;
-                  });
-                },
-                onSelectedCategoryChanged: (categoryId) {
-                  setState(() => _selectedCategoryId = categoryId);
-                },
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                key: const ValueKey('list-name-field'),
-                controller: _listNameController,
-                enabled: !_isSaving,
-                textCapitalization: TextCapitalization.sentences,
-                decoration: const InputDecoration(
-                  labelText: 'List Name',
-                  border: OutlineInputBorder(),
-                ),
-                validator: _requiredTextValidator,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                key: const ValueKey('note-field'),
-                controller: _noteController,
-                enabled: !_isSaving,
-                textCapitalization: TextCapitalization.sentences,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Note (optional)',
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 24),
-              FilledButton.icon(
-                key: const ValueKey('save-list-button'),
-                onPressed: _isSaving ? null : _save,
-                icon: _isSaving
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save),
-                label: Text(_isSaving ? 'Saving...' : 'Save'),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -230,9 +246,10 @@ class _CategoryField extends StatelessWidget {
             final usesVerticalLayout =
                 usesLargeText || constraints.maxWidth < 300;
 
-            return SegmentedButton<_CategoryMode>(
+            final selector = SegmentedButton<_CategoryMode>(
               key: const ValueKey('category-mode-selector'),
               direction: usesVerticalLayout ? Axis.vertical : Axis.horizontal,
+              expandedInsets: usesVerticalLayout ? null : EdgeInsets.zero,
               segments: const [
                 ButtonSegment(
                   value: _CategoryMode.existing,
@@ -250,6 +267,8 @@ class _CategoryField extends StatelessWidget {
                   ? (selection) => onCategoryModeChanged(selection.first)
                   : null,
             );
+
+            return SizedBox(width: constraints.maxWidth, child: selector);
           },
         ),
         const SizedBox(height: 12),
