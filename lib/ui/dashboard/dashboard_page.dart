@@ -67,8 +67,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               icon: const Icon(Icons.file_download_outlined),
               tooltip: 'Export CSV',
             ),
+          IconButton(
+            onPressed: () => context.push('/settings'),
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Settings',
+          ),
         ],
       ),
+
       body: SafeArea(
         child: Column(
           children: [
@@ -81,7 +87,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               },
             ),
             Expanded(
+              ///If data has loaded, call data and build _ListCards.
+              ///While loading, build a progress indicator.
+              ///If loading failed, call error and build _LoadError
               child: listSummaries.when(
+                ///When the data is ready, summaries is the actual list:
                 data: (summaries) => _ListCards(
                   summaries: _filterSummaries(summaries),
                   hasActiveFilter: _selectedCategoryId != null,
@@ -93,6 +103,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ],
         ),
       ),
+
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/add-list'),
         icon: const Icon(Icons.add),

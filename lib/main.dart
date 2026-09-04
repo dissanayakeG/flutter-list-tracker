@@ -8,6 +8,7 @@ import 'ui/add_entry/add_entry_page.dart';
 import 'ui/categories/categories_page.dart';
 import 'ui/dashboard/dashboard_page.dart';
 import 'ui/list_detail/list_detail_page.dart';
+import 'ui/settings/settings_page.dart';
 import 'ui/theme/app_theme.dart';
 
 void main() {
@@ -17,6 +18,7 @@ void main() {
 final _router = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (_, _) => const DashboardPage()),
+    GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
     GoRoute(path: '/add-list', builder: (_, _) => const AddListPage()),
     GoRoute(path: '/categories', builder: (_, _) => const CategoriesPage()),
     GoRoute(
@@ -43,16 +45,18 @@ final _router = GoRouter(
   ],
 );
 
-class ListTrackerApp extends StatelessWidget {
+class ListTrackerApp extends ConsumerWidget {
   const ListTrackerApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(appThemeModeProvider);
+
     return MaterialApp.router(
       title: 'List Tracker',
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
       routerConfig: _router,
     );
   }
