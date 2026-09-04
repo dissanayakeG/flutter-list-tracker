@@ -17,18 +17,19 @@ void main() {
       ),
     );
 
-    expect(
-      tester
-          .widget<DropdownButton<ThemeMode>>(
-            find.byType(DropdownButton<ThemeMode>),
-          )
-          .menuWidth,
-      160,
+    final menu = tester.widget<PopupMenuButton<ThemeMode>>(
+      find.byKey(const ValueKey('theme-mode-menu')),
     );
+    final colors = Theme.of(
+      tester.element(find.byKey(const ValueKey('theme-mode-menu'))),
+    ).colorScheme;
 
-    await tester.tap(find.byType(DropdownButton<ThemeMode>));
+    expect(menu.color, colors.surfaceContainerHigh);
+    expect(menu.position, PopupMenuPosition.under);
+
+    await tester.tap(find.byKey(const ValueKey('theme-mode-menu')));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Light').last);
+    await tester.tap(find.byType(CheckedPopupMenuItem<ThemeMode>).first);
     await tester.pumpAndSettle();
 
     expect(container.read(appThemeModeProvider), ThemeMode.light);
