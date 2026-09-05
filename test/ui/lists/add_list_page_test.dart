@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/data/repository/list_tracker_repository.dart';
+import 'package:list_tracker/data/repository/category_repository.dart';
+import 'package:list_tracker/data/repository/list_repository.dart';
 import 'package:list_tracker/data/repository/repository_providers.dart';
-import 'package:list_tracker/ui/add_list/add_list_page.dart';
+import 'package:list_tracker/ui/lists/pages/add_list_page.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
@@ -197,7 +198,7 @@ void main() {
 
 Future<void> _pumpAddListPage(
   WidgetTester tester,
-  ListTrackerRepository repository, {
+  _RecordingRepository repository, {
   TextScaler textScaler = TextScaler.noScaling,
 }) async {
   final router = GoRouter(
@@ -214,7 +215,10 @@ Future<void> _pumpAddListPage(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [listTrackerRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        categoryRepositoryProvider.overrideWithValue(repository),
+        listRepositoryProvider.overrideWithValue(repository),
+      ],
       child: MaterialApp.router(
         routerConfig: router,
         builder: (context, child) => MediaQuery(
@@ -227,7 +231,7 @@ Future<void> _pumpAddListPage(
   await tester.pumpAndSettle();
 }
 
-class _RecordingRepository implements ListTrackerRepository {
+class _RecordingRepository implements CategoryRepository, ListRepository {
   _RecordingRepository({List<Category> categories = const []})
     : _categories = List.unmodifiable(categories);
 

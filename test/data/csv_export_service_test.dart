@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:csv/csv.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:list_tracker/data/repository/list_tracker_repository.dart';
+import 'package:list_tracker/data/repository/transfer_repository.dart';
 import 'package:list_tracker/data/transfer/csv_export_service.dart';
 import 'package:list_tracker/data/transfer/export_snapshot.dart';
 
@@ -111,7 +111,7 @@ ListTrackerExportSnapshot _snapshot() {
   );
 }
 
-class _SnapshotRepository implements ListTrackerRepository {
+class _SnapshotRepository implements TransferRepository {
   _SnapshotRepository(this.snapshot);
 
   final ListTrackerExportSnapshot snapshot;

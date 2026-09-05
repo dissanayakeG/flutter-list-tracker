@@ -12,7 +12,7 @@ final csvFileSaveGatewayProvider = Provider<CsvFileSaveGateway>((ref) {
 ///RepositoryCsvExportService is the implementation
 final csvExportServiceProvider = Provider<CsvExportService>((ref) {
   return RepositoryCsvExportService(
-    repository: ref.watch(listTrackerRepositoryProvider),
+    repository: ref.watch(transferRepositoryProvider),
     fileSaveGateway: ref.watch(csvFileSaveGatewayProvider),
   );
 });

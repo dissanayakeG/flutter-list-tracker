@@ -3,9 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/data/repository/list_tracker_repository.dart';
+import 'package:list_tracker/data/repository/category_repository.dart';
+import 'package:list_tracker/data/repository/list_repository.dart';
 import 'package:list_tracker/data/repository/repository_providers.dart';
-import 'package:list_tracker/ui/add_list/edit_list_page.dart';
+import 'package:list_tracker/ui/lists/pages/edit_list_page.dart';
 
 void main() {
   testWidgets('prefills and updates an existing list', (tester) async {
@@ -79,7 +80,7 @@ void main() {
 
 Future<void> _pumpEditListPage(
   WidgetTester tester,
-  ListTrackerRepository repository,
+  _EditListRepository repository,
   int listId,
 ) async {
   final router = GoRouter(
@@ -100,14 +101,17 @@ Future<void> _pumpEditListPage(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [listTrackerRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        categoryRepositoryProvider.overrideWithValue(repository),
+        listRepositoryProvider.overrideWithValue(repository),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
   await tester.pumpAndSettle();
 }
 
-class _EditListRepository implements ListTrackerRepository {
+class _EditListRepository implements CategoryRepository, ListRepository {
   _EditListRepository({required this.list, required List<Category> categories})
     : _categories = List.unmodifiable(categories);
 

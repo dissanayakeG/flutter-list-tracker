@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../data/local/app_database.dart';
-import '../../data/repository/repository_providers.dart';
+import 'package:list_tracker/data/local/app_database.dart';
+import 'package:list_tracker/data/repository/repository_providers.dart';
+import 'package:list_tracker/ui/lists/widgets/list_category_dropdown.dart';
 
 enum _CategoryMode { existing, newCategory }
 
-const _categoryDropdownMenuMaxWidth = 280.0;
 const _formMaxWidth = 640.0;
 
 class AddListPage extends ConsumerStatefulWidget {
@@ -156,7 +156,7 @@ class _AddListPageState extends ConsumerState<AddListPage> {
       return;
     }
 
-    final repository = ref.read(listTrackerRepositoryProvider);
+    final repository = ref.read(listRepositoryProvider);
     setState(() => _isSaving = true);
 
     try {
@@ -273,7 +273,7 @@ class _CategoryField extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         if (categoryMode == _CategoryMode.existing)
-          _ExistingCategoryDropdown(
+          ExistingListCategoryDropdown(
             categories: categories,
             selectedCategoryId: selectedCategoryId,
             enabled: enabled,
@@ -285,75 +285,6 @@ class _CategoryField extends StatelessWidget {
             enabled: enabled,
           ),
       ],
-    );
-  }
-}
-
-class _ExistingCategoryDropdown extends StatelessWidget {
-  const _ExistingCategoryDropdown({
-    required this.categories,
-    required this.selectedCategoryId,
-    required this.enabled,
-    required this.onChanged,
-  });
-
-  final List<Category> categories;
-  final int? selectedCategoryId;
-  final bool enabled;
-  final ValueChanged<int?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final menuWidth = math.min(
-          _categoryDropdownMenuMaxWidth,
-          constraints.maxWidth,
-        );
-
-        return FormField<int>(
-          initialValue: selectedCategoryId,
-          validator: (value) => value == null ? 'Choose a category.' : null,
-          builder: (field) {
-            return InputDecorator(
-              key: const ValueKey('existing-category-input'),
-              decoration: const InputDecoration(
-                labelText: 'Existing category',
-                border: OutlineInputBorder(),
-              ).copyWith(errorText: field.errorText),
-              // The dropdown's hint occupies the field when no category is
-              // selected, so the label must remain floating to avoid overlap.
-              isEmpty: false,
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<int>(
-                  key: const ValueKey('existing-category-dropdown'),
-                  value: selectedCategoryId,
-                  isExpanded: true,
-                  menuWidth: menuWidth,
-                  hint: const Text('Choose a category'),
-                  items: [
-                    for (final category in categories)
-                      DropdownMenuItem(
-                        value: category.id,
-                        child: Text(
-                          category.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                  ],
-                  onChanged: enabled
-                      ? (value) {
-                          field.didChange(value);
-                          onChanged(value);
-                        }
-                      : null,
-                ),
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }

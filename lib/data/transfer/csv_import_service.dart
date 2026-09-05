@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 
-import '../repository/list_tracker_repository.dart';
+import '../repository/transfer_repository.dart';
 import 'csv_export_service.dart';
 import 'csv_import_models.dart';
 
@@ -67,7 +67,7 @@ class RepositoryCsvImportService implements CsvImportService {
     CsvImportParser? parser,
   }) : _parser = parser ?? const CsvImportParser();
 
-  final ListTrackerRepository repository;
+  final TransferRepository repository;
   final CsvFileOpenGateway fileOpenGateway;
   final CsvImportParser _parser;
 

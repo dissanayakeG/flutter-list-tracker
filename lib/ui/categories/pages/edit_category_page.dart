@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../data/local/app_database.dart';
-import '../../data/repository/repository_providers.dart';
+import 'package:list_tracker/data/local/app_database.dart';
+import 'package:list_tracker/data/repository/repository_providers.dart';
+import 'package:list_tracker/ui/categories/widgets/category_name_field.dart';
 
 class EditCategoryPage extends ConsumerWidget {
   const EditCategoryPage({super.key, required this.categoryId});
@@ -84,28 +85,25 @@ class _EditCategoryFormState extends ConsumerState<_EditCategoryForm> {
                 ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 6),
+
           Text(
             'Rename this category without changing the lists inside it.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),
+
           const SizedBox(height: 24),
-          TextFormField(
-            key: const ValueKey('edit-category-name-field'),
+
+          CategoryNameField(
+            fieldKey: const ValueKey('edit-category-name-field'),
             controller: _nameController,
             enabled: !_isSaving,
-            textCapitalization: TextCapitalization.words,
             autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Category Name',
-              border: OutlineInputBorder(),
-            ),
-            validator: (value) => value == null || value.trim().isEmpty
-                ? 'Enter a category name.'
-                : null,
           ),
+
           const SizedBox(height: 24),
+
           FilledButton.icon(
             key: const ValueKey('save-edited-category-button'),
             onPressed: _isSaving ? null : _save,
@@ -131,7 +129,7 @@ class _EditCategoryFormState extends ConsumerState<_EditCategoryForm> {
     setState(() => _isSaving = true);
     try {
       final updated = await ref
-          .read(listTrackerRepositoryProvider)
+          .read(categoryRepositoryProvider)
           .updateCategory(id: widget.category.id, name: _nameController.text);
       if (!mounted) {
         return;

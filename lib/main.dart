@@ -1,63 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:list_tracker/ui/add_list/edit_list_page.dart';
-import 'package:list_tracker/ui/categories/edit_category_page.dart';
 
-import 'data/local/app_database.dart';
-import 'ui/add_list/add_list_page.dart';
-import 'ui/add_entry/add_entry_page.dart';
-import 'ui/categories/categories_page.dart';
-import 'ui/dashboard/dashboard_page.dart';
-import 'ui/list_detail/list_detail_page.dart';
+import 'app_router.dart';
 import 'ui/settings/settings_page.dart';
 import 'ui/theme/app_theme.dart';
 
 void main() {
   runApp(const ProviderScope(child: ListTrackerApp()));
 }
-
-final _router = GoRouter(
-  routes: [
-    GoRoute(path: '/', builder: (_, _) => const DashboardPage()),
-    GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
-    GoRoute(path: '/add-list', builder: (_, _) => const AddListPage()),
-    GoRoute(path: '/categories', builder: (_, _) => const CategoriesPage()),
-    GoRoute(
-      path: '/categories/add',
-      builder: (_, _) => const AddCategoryPage(),
-    ),
-    GoRoute(
-      path: '/categories/:categoryId/edit',
-      builder: (_, state) => EditCategoryPage(
-        categoryId: int.parse(state.pathParameters['categoryId']!),
-      ),
-    ),
-    GoRoute(
-      path: '/lists/:listId',
-      builder: (_, state) =>
-          ListDetailPage(listId: int.parse(state.pathParameters['listId']!)),
-    ),
-    GoRoute(
-      path: '/lists/:listId/edit',
-      builder: (_, state) => EditListPage(
-        listId: int.parse(state.pathParameters['listId']!),
-      ),
-    ),
-    GoRoute(
-      path: '/lists/:listId/add-entry',
-      builder: (_, state) =>
-          AddEntryPage(listId: int.parse(state.pathParameters['listId']!)),
-    ),
-    GoRoute(
-      path: '/lists/:listId/entries/:entryId/edit',
-      builder: (_, state) => AddEntryPage(
-        listId: int.parse(state.pathParameters['listId']!),
-        entry: state.extra as Entry?,
-      ),
-    ),
-  ],
-);
 
 class ListTrackerApp extends ConsumerWidget {
   const ListTrackerApp({super.key});
@@ -71,7 +21,7 @@ class ListTrackerApp extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       themeMode: themeMode,
-      routerConfig: _router,
+      routerConfig: AppRouter.router,
     );
   }
 }

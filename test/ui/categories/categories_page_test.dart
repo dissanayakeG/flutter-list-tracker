@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/data/repository/list_tracker_repository.dart';
+import 'package:list_tracker/data/repository/category_repository.dart';
+import 'package:list_tracker/data/repository/list_repository.dart';
 import 'package:list_tracker/data/repository/repository_providers.dart';
-import 'package:list_tracker/ui/categories/categories_page.dart';
-import 'package:list_tracker/ui/categories/edit_category_page.dart';
+import 'package:list_tracker/ui/categories/pages/add_category_page.dart';
+import 'package:list_tracker/ui/categories/pages/categories_page.dart';
+import 'package:list_tracker/ui/categories/pages/edit_category_page.dart';
 import 'package:list_tracker/ui/dashboard/dashboard_page.dart';
 import 'package:list_tracker/ui/settings/settings_page.dart';
 
@@ -210,7 +212,7 @@ void main() {
 
 Future<void> _pumpCategoryFlow(
   WidgetTester tester, {
-  required ListTrackerRepository repository,
+  required CategoryRepository repository,
   String initialLocation = '/',
 }) async {
   final router = GoRouter(
@@ -234,14 +236,17 @@ Future<void> _pumpCategoryFlow(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [listTrackerRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        categoryRepositoryProvider.overrideWithValue(repository),
+        listRepositoryProvider.overrideWithValue(_EmptyListRepository()),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
   await tester.pumpAndSettle();
 }
 
-class _CategoryRepository implements ListTrackerRepository {
+class _CategoryRepository implements CategoryRepository {
   _CategoryRepository({
     List<Category> categories = const [],
     Set<int> usedCategoryIds = const {},
@@ -260,9 +265,6 @@ class _CategoryRepository implements ListTrackerRepository {
     yield categories;
     yield* _updates.stream;
   }
-
-  @override
-  Stream<List<ListWithCategory>> watchLists() => Stream.value(const []);
 
   @override
   Future<Category> createOrGetCategory({required String name}) async {
@@ -322,6 +324,14 @@ class _CategoryRepository implements ListTrackerRepository {
   }
 
   void dispose() => _updates.close();
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _EmptyListRepository implements ListRepository {
+  @override
+  Stream<List<ListWithCategory>> watchLists() => Stream.value(const []);
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

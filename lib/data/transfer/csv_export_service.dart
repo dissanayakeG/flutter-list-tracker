@@ -4,7 +4,7 @@ import 'dart:typed_data';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 
-import '../repository/list_tracker_repository.dart';
+import '../repository/transfer_repository.dart';
 import 'export_snapshot.dart';
 
 const csvHeader = <String>['category', 'list', 'entry', 'date'];
@@ -47,7 +47,7 @@ class RepositoryCsvExportService implements CsvExportService {
   }) : _encoder = encoder ?? const CsvExportEncoder(),
        _now = now ?? DateTime.now;
 
-  final ListTrackerRepository repository;
+  final TransferRepository repository;
   final CsvFileSaveGateway fileSaveGateway;
   final CsvExportEncoder _encoder;
   final DateTime Function() _now;

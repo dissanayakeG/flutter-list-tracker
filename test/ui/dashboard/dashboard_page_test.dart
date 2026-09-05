@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/data/repository/list_tracker_repository.dart';
+import 'package:list_tracker/data/repository/category_repository.dart';
+import 'package:list_tracker/data/repository/list_repository.dart';
 import 'package:list_tracker/data/repository/repository_providers.dart';
 import 'package:list_tracker/data/transfer/csv_export_providers.dart';
 import 'package:list_tracker/data/transfer/csv_export_service.dart';
@@ -31,7 +32,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(repository),
+          categoryRepositoryProvider.overrideWithValue(repository),
+          listRepositoryProvider.overrideWithValue(repository),
         ],
         child: MaterialApp(
           builder: (context, child) => MediaQuery(
@@ -88,7 +90,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(repository),
+          categoryRepositoryProvider.overrideWithValue(repository),
+          listRepositoryProvider.overrideWithValue(repository),
         ],
         child: const MaterialApp(home: DashboardPage()),
       ),
@@ -190,7 +193,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(repository),
+          categoryRepositoryProvider.overrideWithValue(repository),
+          listRepositoryProvider.overrideWithValue(repository),
         ],
         child: const ListTrackerApp(),
       ),
@@ -212,7 +216,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+          listRepositoryProvider.overrideWithValue(_FakeRepository()),
           csvExportServiceProvider.overrideWithValue(exporter),
         ],
         child: const MaterialApp(home: DashboardPage()),
@@ -233,7 +238,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+          listRepositoryProvider.overrideWithValue(_FakeRepository()),
           csvExportServiceProvider.overrideWithValue(cancelledExporter),
         ],
         child: const MaterialApp(home: DashboardPage()),
@@ -251,7 +257,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+          listRepositoryProvider.overrideWithValue(_FakeRepository()),
           csvExportServiceProvider.overrideWithValue(
             _ThrowingCsvExportService(),
           ),
@@ -278,7 +285,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+            categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+            listRepositoryProvider.overrideWithValue(_FakeRepository()),
             csvImportServiceProvider.overrideWithValue(importer),
           ],
           child: const MaterialApp(home: DashboardPage()),
@@ -303,7 +311,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+          listRepositoryProvider.overrideWithValue(_FakeRepository()),
           csvImportServiceProvider.overrideWithValue(importer),
         ],
         child: const MaterialApp(home: DashboardPage()),
@@ -337,7 +346,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+          listRepositoryProvider.overrideWithValue(_FakeRepository()),
           csvImportServiceProvider.overrideWithValue(importer),
         ],
         child: const MaterialApp(home: DashboardPage()),
@@ -362,7 +372,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+            categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+            listRepositoryProvider.overrideWithValue(_FakeRepository()),
             csvImportServiceProvider.overrideWithValue(importer),
           ],
           child: const MaterialApp(home: DashboardPage()),
@@ -400,7 +411,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+            categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+            listRepositoryProvider.overrideWithValue(_FakeRepository()),
             csvImportServiceProvider.overrideWithValue(importer),
           ],
           child: const MaterialApp(home: DashboardPage()),
@@ -472,18 +484,21 @@ ListWithCategory _summary() {
 
 Future<void> _pumpDashboard(
   WidgetTester tester,
-  ListTrackerRepository repository,
+  _FakeRepository repository,
 ) async {
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [listTrackerRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        categoryRepositoryProvider.overrideWithValue(repository),
+        listRepositoryProvider.overrideWithValue(repository),
+      ],
       child: const MaterialApp(home: DashboardPage()),
     ),
   );
   await tester.pumpAndSettle();
 }
 
-class _FakeRepository implements ListTrackerRepository {
+class _FakeRepository implements CategoryRepository, ListRepository {
   _FakeRepository({
     List<Category> categories = const [],
     List<ListWithCategory> summaries = const [],

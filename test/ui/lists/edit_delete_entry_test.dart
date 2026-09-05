@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/data/repository/list_tracker_repository.dart';
+import 'package:list_tracker/data/repository/entry_repository.dart';
+import 'package:list_tracker/data/repository/list_repository.dart';
 import 'package:list_tracker/data/repository/repository_providers.dart';
-import 'package:list_tracker/ui/add_entry/add_entry_page.dart';
-import 'package:list_tracker/ui/list_detail/list_detail_page.dart';
+import 'package:list_tracker/ui/entries/pages/edit_entry_page.dart';
+import 'package:list_tracker/ui/lists/pages/list_detail_page.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
@@ -43,7 +44,7 @@ void main() {
 
     expect(find.text('Edit Entry'), findsOneWidget);
     final localizations = MaterialLocalizations.of(
-      tester.element(find.byType(AddEntryPage)),
+      tester.element(find.byType(EditEntryPage)),
     );
     expect(find.text(localizations.formatMediumDate(date)), findsOneWidget);
     expect(
@@ -133,7 +134,7 @@ Entry _entry({required int id, required String content, DateTime? date}) {
 
 Future<void> _pumpListDetail(
   WidgetTester tester,
-  ListTrackerRepository repository,
+  _EditableEntryRepository repository,
 ) async {
   final router = GoRouter(
     initialLocation: '/lists/1',
@@ -145,9 +146,9 @@ Future<void> _pumpListDetail(
       ),
       GoRoute(
         path: '/lists/:listId/entries/:entryId/edit',
-        builder: (_, state) => AddEntryPage(
+        builder: (_, state) => EditEntryPage(
           listId: int.parse(state.pathParameters['listId']!),
-          entry: state.extra as Entry?,
+          entry: state.extra! as Entry,
         ),
       ),
     ],
@@ -155,14 +156,17 @@ Future<void> _pumpListDetail(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [listTrackerRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        listRepositoryProvider.overrideWithValue(repository),
+        entryRepositoryProvider.overrideWithValue(repository),
+      ],
       child: MaterialApp.router(routerConfig: router),
     ),
   );
   await tester.pumpAndSettle();
 }
 
-class _EditableEntryRepository implements ListTrackerRepository {
+class _EditableEntryRepository implements ListRepository, EntryRepository {
   _EditableEntryRepository({
     required this.summary,
     required List<Entry> entries,
