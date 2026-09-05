@@ -33,6 +33,18 @@ String requiredText(
   }
 }
 
+String requiredName(
+  String value, {
+  required String fieldName,
+  required int maxLength,
+}) {
+  try {
+    return normalizeName(value, fieldName: fieldName, maxLength: maxLength);
+  } on InputValidationException catch (error) {
+    throw ArgumentError.value(value, fieldName, error.message);
+  }
+}
+
 String? optionalText(
   String? value, {
   String fieldName = 'value',
@@ -94,6 +106,7 @@ String normalizeText(
     final isTab = codePoint == 0x09;
     final isAsciiControl = codePoint < 0x20 || codePoint == 0x7f;
     final isC1Control = codePoint >= 0x80 && codePoint <= 0x9f;
+    final isZeroWidthSpace = codePoint == 0x200b;
     final isBidiOverride =
         codePoint >= 0x202a && codePoint <= 0x202e ||
         codePoint >= 0x2066 && codePoint <= 0x2069;
@@ -102,6 +115,7 @@ String normalizeText(
             !(allowLineBreaks && isLineBreak) &&
             !(allowLineBreaks && isTab)) ||
         isC1Control ||
+        isZeroWidthSpace ||
         isBidiOverride) {
       throw InputValidationException(
         fieldName,
@@ -111,6 +125,51 @@ String normalizeText(
   }
 
   return value;
+}
+
+String normalizeName(
+  String value, {
+  required String fieldName,
+  required int maxLength,
+}) {
+  final normalizedValue = normalizeRequiredText(
+    value,
+    fieldName: fieldName,
+    maxLength: maxLength,
+  );
+  if (!RegExp(r'\p{L}|\p{N}', unicode: true).hasMatch(normalizedValue)) {
+    throw InputValidationException(
+      fieldName,
+      'must contain at least one letter or number.',
+    );
+  }
+  if (_containsForbiddenCodePointNotation(normalizedValue)) {
+    throw InputValidationException(
+      fieldName,
+      'contains a blocked control-code notation.',
+    );
+  }
+  return normalizedValue;
+}
+
+bool _containsForbiddenCodePointNotation(String value) {
+  final notation = RegExp(r'(?:\\u|u\+)([0-9a-f]{4,6})', caseSensitive: false);
+  for (final match in notation.allMatches(value)) {
+    final codePoint = int.parse(match.group(1)!, radix: 16);
+    if (_isForbiddenNameCodePoint(codePoint)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool _isForbiddenNameCodePoint(int codePoint) {
+  return codePoint <= 0x1f ||
+      codePoint == 0x7f ||
+      codePoint >= 0x80 && codePoint <= 0x9f ||
+      codePoint == 0x200b ||
+      codePoint >= 0x202a && codePoint <= 0x202e ||
+      codePoint >= 0x2066 && codePoint <= 0x2069;
 }
 
 void _validateUtf16(String value, String fieldName) {
@@ -153,6 +212,23 @@ String? validateRequiredText({
       maxLength: maxLength,
       allowLineBreaks: allowLineBreaks,
     );
+  } on InputValidationException catch (error) {
+    return error.message[0].toUpperCase() + error.message.substring(1);
+  }
+  return null;
+}
+
+String? validateName({
+  required String? value,
+  required String label,
+  required String fieldName,
+  required int maxLength,
+}) {
+  if (value == null || value.trim().isEmpty) {
+    return 'Enter a $label.';
+  }
+  try {
+    normalizeName(value, fieldName: fieldName, maxLength: maxLength);
   } on InputValidationException catch (error) {
     return error.message[0].toUpperCase() + error.message.substring(1);
   }

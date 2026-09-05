@@ -103,6 +103,34 @@ void main() {
     expect(find.text('Meal Plans'), findsOneWidget);
   });
 
+  testWidgets('rejects blocked code-point notation before saving a category', (
+    tester,
+  ) async {
+    final repository = _CategoryRepository();
+    addTearDown(repository.dispose);
+
+    await _pumpCategoryFlow(
+      tester,
+      repository: repository,
+      initialLocation: '/categories',
+    );
+    await tester.tap(find.byTooltip('Add category'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('category-name-field')),
+      'Reserved U+200B',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-category-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Contains a blocked control-code notation.'),
+      findsOneWidget,
+    );
+    expect(repository.categories, isEmpty);
+  });
+
   testWidgets('prefills and updates an existing category', (tester) async {
     const reading = Category(
       id: 1,

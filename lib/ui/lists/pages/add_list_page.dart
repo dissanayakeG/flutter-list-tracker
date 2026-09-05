@@ -120,7 +120,7 @@ class _AddListPageState extends ConsumerState<AddListPage> {
                           labelText: 'List Name',
                           border: OutlineInputBorder(),
                         ),
-                        validator: (value) => validateRequiredText(
+                        validator: (value) => validateName(
                           value: value,
                           label: 'list name',
                           fieldName: 'list name',
@@ -338,7 +338,7 @@ class _NewCategoryField extends StatelessWidget {
         labelText: 'New category',
         border: OutlineInputBorder(),
       ),
-      validator: (value) => validateRequiredText(
+      validator: (value) => validateName(
         value: value,
         label: 'category',
         fieldName: 'category',

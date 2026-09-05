@@ -53,6 +53,17 @@ void main() {
     );
   });
 
+  test('preserves literal apostrophes in external CSV imports', () {
+    final document = parser.parse(
+      _encode([
+        csvHeader,
+        ['Reading', 'Books', "'=literal-marker", ''],
+      ]),
+    );
+
+    expect(document.entries.single.content, "'=literal-marker");
+  });
+
   test('reports the source row for invalid structural rows and dates', () {
     expectInvalidCsv(
       parser,
@@ -139,6 +150,56 @@ void main() {
       ]),
       'Row 2 has an invalid entry',
     );
+    expectInvalidCsv(
+      parser,
+      _encode([
+        csvHeader,
+        ['!!!', 'Books', 'Read a chapter', ''],
+      ]),
+      'Row 2 has an invalid category',
+    );
+    expectInvalidCsv(
+      parser,
+      _encode([
+        csvHeader,
+        [r'NUL: \u0000', 'Books', 'Read a chapter', ''],
+      ]),
+      'Row 2 has an invalid category',
+    );
+  });
+
+  test('rejects every blocked code-point notation in CSV names', () {
+    const blockedNotations = [
+      'U+0000',
+      'U+001F',
+      'U+007F',
+      'U+0080',
+      'U+009F',
+      'U+200B',
+      'U+202A',
+      'U+202E',
+      'U+2066',
+      'U+2069',
+    ];
+
+    for (final notation in blockedNotations) {
+      expectInvalidCsv(
+        parser,
+        _encode([
+          csvHeader,
+          ['Reserved $notation', 'Books', 'Read a chapter', ''],
+        ]),
+        'Row 2 has an invalid category',
+      );
+      expectInvalidCsv(
+        parser,
+        _encode([
+          csvHeader,
+          ['Reading', 'Reserved $notation', '', ''],
+        ]),
+        'Row 2 has an invalid list',
+      );
+    }
   });
 
   test(

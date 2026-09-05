@@ -41,9 +41,9 @@ class DriftCategoryRepository implements CategoryRepository {
 
   @override
   Future<Category> createOrGetCategory({required String name}) {
-    final normalizedName = requiredText(
+    final normalizedName = requiredName(
       name,
-      'name',
+      fieldName: 'name',
       maxLength: categoryNameMaxLength,
     );
 
@@ -72,7 +72,11 @@ class DriftCategoryRepository implements CategoryRepository {
         )..where((table) => table.id.equals(id))).write(
           CategoriesCompanion(
             name: Value(
-              requiredText(name, 'name', maxLength: categoryNameMaxLength),
+              requiredName(
+                name,
+                fieldName: 'name',
+                maxLength: categoryNameMaxLength,
+              ),
             ),
           ),
         );

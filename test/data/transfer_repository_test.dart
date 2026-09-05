@@ -113,6 +113,28 @@ void main() {
   );
 
   test(
+    'revalidates blocked code-point notation before CSV persistence',
+    () async {
+      const document = CsvImportDocument(
+        categoryNames: ['Reading'],
+        listReferences: [
+          CsvListReference(
+            categoryName: 'Reading',
+            listName: 'Reserved U+2066',
+          ),
+        ],
+        entries: [],
+      );
+
+      await expectLater(
+        transferRepository.previewCsvImport(document),
+        throwsA(isA<CsvImportFormatException>()),
+      );
+      expect(await categoryRepository.getCategories(), isEmpty);
+    },
+  );
+
+  test(
     'creates confirmed lists under their categories and preserves empty lists',
     () async {
       final meals = await categoryRepository.createOrGetCategory(name: 'Meals');

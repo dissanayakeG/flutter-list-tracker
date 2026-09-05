@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:list_tracker/data/repository/transfer_repository.dart';
 import 'package:list_tracker/data/transfer/csv_export_service.dart';
 import 'package:list_tracker/data/transfer/export_snapshot.dart';
+import 'package:list_tracker/data/transfer/csv_import_service.dart';
+import 'package:list_tracker/data/transfer/csv_spreadsheet_protection.dart';
 
 void main() {
   test('encodes the readable header and every row shape losslessly', () {
@@ -57,6 +59,89 @@ void main() {
     expect(rows[1], ['Exercise', '', '', '']);
     expect(rows[2], ['Exercise', 'Morning mobility', '', '']);
   });
+
+  test('protects spreadsheet formulas in every data column', () {
+    final contents = const CsvExportEncoder().encode(
+      ListTrackerExportSnapshot(
+        categories: const [ExportCategory(name: '=Budget')],
+        lists: const [ExportList(categoryName: '=Budget', name: '+2026')],
+        entries: [
+          ExportEntry(
+            categoryName: '=Budget',
+            listName: '+2026',
+            content: ' @SUM(A1:A2)',
+            date: DateTime(2026, 3, 15),
+          ),
+        ],
+      ),
+    );
+    final rows = Csv().decode(contents.substring(csvUtf8Bom.length));
+
+    expect(rows[1], ['$csvSpreadsheetEscapeMarker=Budget', '', '', '']);
+    expect(rows[2], [
+      '$csvSpreadsheetEscapeMarker=Budget',
+      '$csvSpreadsheetEscapeMarker+2026',
+      '',
+      '',
+    ]);
+    expect(rows[3], [
+      '$csvSpreadsheetEscapeMarker=Budget',
+      '$csvSpreadsheetEscapeMarker+2026',
+      '$csvSpreadsheetEscapeMarker @SUM(A1:A2)',
+      '2026-03-15',
+    ]);
+  });
+
+  test(
+    'formula protection round-trips triggers, whitespace, and apostrophes',
+    () {
+      const values = [
+        '=SUM(A1:A2)',
+        '+123',
+        '-123',
+        '@name',
+        ' \t=SUM(A1:A2)',
+        "'=literal-apostrophe",
+        "''=two-literal-apostrophes",
+      ];
+
+      for (final value in values) {
+        expect(
+          restoreCsvSpreadsheetCell(protectCsvSpreadsheetCell(value)),
+          value,
+        );
+      }
+    },
+  );
+
+  test(
+    'spreadsheet-protected values parse back to user data without a BOM',
+    () {
+      final contents = const CsvExportEncoder().encode(
+        ListTrackerExportSnapshot(
+          categories: const [ExportCategory(name: '=Budget')],
+          lists: const [ExportList(categoryName: '=Budget', name: '+2026')],
+          entries: [
+            ExportEntry(
+              categoryName: '=Budget',
+              listName: '+2026',
+              content: '@name',
+              date: DateTime(2026, 3, 15),
+            ),
+          ],
+        ),
+      );
+
+      final document = const CsvImportParser().parse(
+        contents.substring(csvUtf8Bom.length),
+      );
+
+      expect(document.categoryNames, ['=Budget']);
+      expect(document.listReferences.single.listName, '+2026');
+      expect(document.entries.single.content, '@name');
+      expect(document.entries.single.date, DateTime(2026, 3, 15));
+    },
+  );
 
   test('saves CSV bytes with a date-based suggested filename', () async {
     final repository = _SnapshotRepository(_snapshot());

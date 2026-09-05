@@ -36,7 +36,7 @@ class CategoryNameField extends StatelessWidget {
         labelText: 'Category Name',
         border: OutlineInputBorder(),
       ),
-      validator: (value) => validateRequiredText(
+      validator: (value) => validateName(
         value: value,
         label: 'category name',
         fieldName: 'category name',

@@ -6,8 +6,10 @@ import 'package:file_picker/file_picker.dart';
 
 import '../repository/transfer_repository.dart';
 import 'export_snapshot.dart';
+import 'csv_spreadsheet_protection.dart';
 
 const csvHeader = <String>['category', 'list', 'entry', 'date'];
+const csvUtf8Bom = '\uFEFF';
 
 abstract interface class CsvExportService {
   Future<CsvExportResult> export();
@@ -70,18 +72,24 @@ class CsvExportEncoder {
   String encode(ListTrackerExportSnapshot snapshot) {
     final rows = <List<String>>[
       csvHeader,
-      for (final category in snapshot.categories) [category.name, '', '', ''],
-      for (final list in snapshot.lists) [list.categoryName, list.name, '', ''],
+      for (final category in snapshot.categories)
+        _protectedRow([category.name, '', '', '']),
+      for (final list in snapshot.lists)
+        _protectedRow([list.categoryName, list.name, '', '']),
       for (final entry in snapshot.entries)
-        [
+        _protectedRow([
           entry.categoryName,
           entry.listName,
           entry.content,
           entry.date == null ? '' : _dateOnly(entry.date!),
-        ],
+        ]),
     ];
 
-    return '\uFEFF${Csv(lineDelimiter: '\r\n').encode(rows)}';
+    return '$csvUtf8Bom${Csv(lineDelimiter: '\r\n').encode(rows)}';
+  }
+
+  List<String> _protectedRow(List<String> values) {
+    return values.map(protectCsvSpreadsheetCell).toList(growable: false);
   }
 
   String _dateOnly(DateTime value) {

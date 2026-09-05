@@ -4,7 +4,12 @@ All notable user-facing changes to List Tracker are documented here.
 
 ## [Unreleased]
 
-- Production release preparation and signing configuration are pending.
+- CSV exports now protect spreadsheet-formula-looking values while preserving
+  safe export/edit/import round trips and the readable four-column format.
+- Android release builds now require a private production signing configuration
+  instead of falling back to the debug key.
+- Public distribution remains blocked until a signed artifact, security-alert
+  review, and fresh-install/upgrade verification are recorded.
 
 ## [0.1.0] - 2026-09-05
 

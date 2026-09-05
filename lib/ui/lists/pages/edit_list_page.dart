@@ -144,7 +144,7 @@ class _EditListFormState extends ConsumerState<_EditListForm> {
                       labelText: 'List Name',
                       border: OutlineInputBorder(),
                     ),
-                    validator: (value) => validateRequiredText(
+                    validator: (value) => validateName(
                       value: value,
                       label: 'list name',
                       fieldName: 'list name',

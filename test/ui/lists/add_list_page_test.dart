@@ -97,6 +97,30 @@ void main() {
     expect(find.text('Dashboard'), findsOneWidget);
   });
 
+  testWidgets('rejects blocked code-point notation before saving a list', (
+    tester,
+  ) async {
+    final repository = _RecordingRepository();
+
+    await _pumpAddListPage(tester, repository);
+    await tester.enterText(
+      find.byKey(const ValueKey('new-category-field')),
+      'Reading',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('list-name-field')),
+      'Reserved U+2066',
+    );
+    await tester.tap(find.byKey(const ValueKey('save-list-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Contains a blocked control-code notation.'),
+      findsOneWidget,
+    );
+    expect(repository.newCategoryRequest, isNull);
+  });
+
   testWidgets('aligns the category selector with form fields', (tester) async {
     const reading = Category(
       id: 1,

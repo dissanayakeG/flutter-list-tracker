@@ -8,6 +8,7 @@ import '../repository/repository_validation.dart';
 import '../repository/transfer_repository.dart';
 import 'csv_export_service.dart';
 import 'csv_import_models.dart';
+import 'csv_spreadsheet_protection.dart';
 
 abstract interface class CsvImportService {
   Future<CsvImportPreparation> prepare();
@@ -110,7 +111,7 @@ class CsvImportParser {
   const CsvImportParser();
 
   CsvImportDocument parse(String contents) {
-    final source = contents.startsWith('\uFEFF')
+    final source = contents.startsWith(csvUtf8Bom)
         ? contents.substring(1)
         : contents;
     if (source.startsWith('sep=')) {
@@ -159,12 +160,14 @@ class CsvImportParser {
         rowNumber: rowNumber,
         fieldName: 'category',
         maxLength: categoryNameMaxLength,
+        isName: true,
       );
       final listName = _optionalValidatedField(
         row[1],
         rowNumber: rowNumber,
         fieldName: 'list',
         maxLength: listNameMaxLength,
+        isName: true,
       );
       final content = _optionalValidatedField(
         row[2],
@@ -238,7 +241,11 @@ class CsvImportParser {
     return true;
   }
 
-  String _field(dynamic value) => value.toString().trim();
+  String _field(dynamic value) {
+    final text = value.toString();
+    final restored = restoreCsvSpreadsheetCell(text);
+    return restored.trim();
+  }
 
   String _validatedField(
     dynamic value, {
@@ -246,14 +253,21 @@ class CsvImportParser {
     required String fieldName,
     required int maxLength,
     bool allowLineBreaks = false,
+    bool isName = false,
   }) {
     try {
-      return normalizeRequiredText(
-        _field(value),
-        fieldName: fieldName,
-        maxLength: maxLength,
-        allowLineBreaks: allowLineBreaks,
-      );
+      return isName
+          ? normalizeName(
+              _field(value),
+              fieldName: fieldName,
+              maxLength: maxLength,
+            )
+          : normalizeRequiredText(
+              _field(value),
+              fieldName: fieldName,
+              maxLength: maxLength,
+              allowLineBreaks: allowLineBreaks,
+            );
     } on InputValidationException catch (error) {
       if (error.message == 'must not be blank.') {
         throw CsvImportFormatException('Row $rowNumber needs a $fieldName.');
@@ -270,18 +284,25 @@ class CsvImportParser {
     required String fieldName,
     required int maxLength,
     bool allowLineBreaks = false,
+    bool isName = false,
   }) {
     final normalized = _field(value);
     if (normalized.isEmpty) {
       return '';
     }
     try {
-      return normalizeText(
-        normalized,
-        fieldName: fieldName,
-        maxLength: maxLength,
-        allowLineBreaks: allowLineBreaks,
-      );
+      return isName
+          ? normalizeName(
+              normalized,
+              fieldName: fieldName,
+              maxLength: maxLength,
+            )
+          : normalizeText(
+              normalized,
+              fieldName: fieldName,
+              maxLength: maxLength,
+              allowLineBreaks: allowLineBreaks,
+            );
     } on InputValidationException catch (error) {
       throw CsvImportFormatException(
         'Row $rowNumber has an invalid $fieldName: ${error.message}',

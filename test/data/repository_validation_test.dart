@@ -52,7 +52,71 @@ void main() {
       ),
       throwsArgumentError,
     );
+    expect(
+      () => requiredName(
+        '!!!',
+        fieldName: 'name',
+        maxLength: categoryNameMaxLength,
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => requiredName(
+        r'NUL: \u0000',
+        fieldName: 'name',
+        maxLength: categoryNameMaxLength,
+      ),
+      throwsArgumentError,
+    );
+    expect(
+      () => requiredName(
+        'Books\u200b',
+        fieldName: 'name',
+        maxLength: categoryNameMaxLength,
+      ),
+      throwsArgumentError,
+    );
   });
+
+  test(
+    'rejects every blocked code point and its literal notation in names',
+    () {
+      const blockedCodePoints = [
+        0x0000,
+        0x001f,
+        0x007f,
+        0x0080,
+        0x009f,
+        0x200b,
+        0x202a,
+        0x202e,
+        0x2066,
+        0x2069,
+      ];
+
+      for (final codePoint in blockedCodePoints) {
+        final notation = 'U+${codePoint.toRadixString(16).padLeft(4, '0')}';
+        expect(
+          () => requiredName(
+            'Reserved ${String.fromCharCode(codePoint)}',
+            fieldName: 'name',
+            maxLength: categoryNameMaxLength,
+          ),
+          throwsArgumentError,
+          reason: 'actual $notation must be rejected',
+        );
+        expect(
+          () => requiredName(
+            'Reserved $notation',
+            fieldName: 'name',
+            maxLength: categoryNameMaxLength,
+          ),
+          throwsArgumentError,
+          reason: 'literal $notation must be rejected',
+        );
+      }
+    },
+  );
 
   test('form validators report invalid optional and required text', () {
     expect(
@@ -63,6 +127,15 @@ void main() {
         maxLength: categoryNameMaxLength,
       ),
       'Enter a category name.',
+    );
+    expect(
+      validateName(
+        value: '!!!',
+        label: 'category name',
+        fieldName: 'category name',
+        maxLength: categoryNameMaxLength,
+      ),
+      contains('letter or number'),
     );
     expect(
       validateOptionalText(

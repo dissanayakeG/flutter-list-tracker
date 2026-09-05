@@ -240,6 +240,7 @@ class DriftTransferRepository implements TransferRepository {
         categoryName,
         fieldName: 'category',
         maxLength: categoryNameMaxLength,
+        isName: true,
       );
     }
     for (final reference in document.listReferences) {
@@ -247,11 +248,13 @@ class DriftTransferRepository implements TransferRepository {
         reference.categoryName,
         fieldName: 'category',
         maxLength: categoryNameMaxLength,
+        isName: true,
       );
       _validateRequiredImportText(
         reference.listName,
         fieldName: 'list',
         maxLength: listNameMaxLength,
+        isName: true,
       );
     }
     for (final entry in document.entries) {
@@ -278,14 +281,19 @@ class DriftTransferRepository implements TransferRepository {
     required String fieldName,
     required int maxLength,
     bool allowLineBreaks = false,
+    bool isName = false,
   }) {
     try {
-      normalizeRequiredText(
-        value,
-        fieldName: fieldName,
-        maxLength: maxLength,
-        allowLineBreaks: allowLineBreaks,
-      );
+      if (isName) {
+        normalizeName(value, fieldName: fieldName, maxLength: maxLength);
+      } else {
+        normalizeRequiredText(
+          value,
+          fieldName: fieldName,
+          maxLength: maxLength,
+          allowLineBreaks: allowLineBreaks,
+        );
+      }
     } on InputValidationException catch (error) {
       throw CsvImportFormatException(
         'The CSV document has an invalid $fieldName: ${error.message}',

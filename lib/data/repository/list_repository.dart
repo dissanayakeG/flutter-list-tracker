@@ -77,7 +77,11 @@ class DriftListRepository implements ListRepository {
         .insert(
           ListModelsCompanion.insert(
             categoryId: categoryId,
-            name: requiredText(name, 'name', maxLength: listNameMaxLength),
+            name: requiredName(
+              name,
+              fieldName: 'name',
+              maxLength: listNameMaxLength,
+            ),
             note: Value(
               optionalText(
                 note,
@@ -121,7 +125,11 @@ class DriftListRepository implements ListRepository {
           ListModelsCompanion(
             categoryId: Value(categoryId),
             name: Value(
-              requiredText(name, 'name', maxLength: listNameMaxLength),
+              requiredName(
+                name,
+                fieldName: 'name',
+                maxLength: listNameMaxLength,
+              ),
             ),
             note: Value(
               optionalText(
