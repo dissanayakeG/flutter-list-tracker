@@ -77,8 +77,15 @@ class DriftListRepository implements ListRepository {
         .insert(
           ListModelsCompanion.insert(
             categoryId: categoryId,
-            name: requiredText(name, 'name'),
-            note: Value(optionalText(note)),
+            name: requiredText(name, 'name', maxLength: listNameMaxLength),
+            note: Value(
+              optionalText(
+                note,
+                fieldName: 'note',
+                maxLength: listNoteMaxLength,
+                allowLineBreaks: true,
+              ),
+            ),
           ),
         );
     return (_database.select(
@@ -113,8 +120,17 @@ class DriftListRepository implements ListRepository {
         )..where((table) => table.id.equals(id))).write(
           ListModelsCompanion(
             categoryId: Value(categoryId),
-            name: Value(requiredText(name, 'name')),
-            note: Value(optionalText(note)),
+            name: Value(
+              requiredText(name, 'name', maxLength: listNameMaxLength),
+            ),
+            note: Value(
+              optionalText(
+                note,
+                fieldName: 'note',
+                maxLength: listNoteMaxLength,
+                allowLineBreaks: true,
+              ),
+            ),
           ),
         );
     return updatedRows == 1;

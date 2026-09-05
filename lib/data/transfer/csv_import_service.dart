@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:csv/csv.dart';
 import 'package:file_picker/file_picker.dart';
 
+import '../repository/repository_validation.dart';
 import '../repository/transfer_repository.dart';
 import 'csv_export_service.dart';
 import 'csv_import_models.dart';
@@ -77,6 +78,11 @@ class RepositoryCsvImportService implements CsvImportService {
     if (bytes == null) {
       return const CsvImportCancelled();
     }
+    if (bytes.length > maxCsvImportBytes) {
+      return const CsvImportInvalid(
+        'The CSV file is too large. The maximum size is 5 MB.',
+      );
+    }
 
     late CsvImportDocument document;
     try {
@@ -127,6 +133,11 @@ class CsvImportParser {
         'Row 1 must be exactly: category,list,entry,date.',
       );
     }
+    if (rows.length - 1 > maxCsvImportDataRows) {
+      throw const CsvImportFormatException(
+        'The CSV file contains too many data rows. The maximum is 10,000.',
+      );
+    }
 
     final categoryNames = <String>{};
     final listReferences = <CsvListReference>{};
@@ -143,14 +154,27 @@ class CsvImportParser {
         );
       }
 
-      final categoryName = _field(row[0]);
-      final listName = _field(row[1]);
-      final content = _field(row[2]);
+      final categoryName = _validatedField(
+        row[0],
+        rowNumber: rowNumber,
+        fieldName: 'category',
+        maxLength: categoryNameMaxLength,
+      );
+      final listName = _optionalValidatedField(
+        row[1],
+        rowNumber: rowNumber,
+        fieldName: 'list',
+        maxLength: listNameMaxLength,
+      );
+      final content = _optionalValidatedField(
+        row[2],
+        rowNumber: rowNumber,
+        fieldName: 'entry',
+        maxLength: entryContentMaxLength,
+        allowLineBreaks: true,
+      );
       final dateText = _field(row[3]);
 
-      if (categoryName.isEmpty) {
-        throw CsvImportFormatException('Row $rowNumber needs a category.');
-      }
       if (content.isEmpty && dateText.isNotEmpty) {
         throw CsvImportFormatException(
           'Row $rowNumber has a date without an entry.',
@@ -215,6 +239,55 @@ class CsvImportParser {
   }
 
   String _field(dynamic value) => value.toString().trim();
+
+  String _validatedField(
+    dynamic value, {
+    required int rowNumber,
+    required String fieldName,
+    required int maxLength,
+    bool allowLineBreaks = false,
+  }) {
+    try {
+      return normalizeRequiredText(
+        _field(value),
+        fieldName: fieldName,
+        maxLength: maxLength,
+        allowLineBreaks: allowLineBreaks,
+      );
+    } on InputValidationException catch (error) {
+      if (error.message == 'must not be blank.') {
+        throw CsvImportFormatException('Row $rowNumber needs a $fieldName.');
+      }
+      throw CsvImportFormatException(
+        'Row $rowNumber has an invalid $fieldName: ${error.message}',
+      );
+    }
+  }
+
+  String _optionalValidatedField(
+    dynamic value, {
+    required int rowNumber,
+    required String fieldName,
+    required int maxLength,
+    bool allowLineBreaks = false,
+  }) {
+    final normalized = _field(value);
+    if (normalized.isEmpty) {
+      return '';
+    }
+    try {
+      return normalizeText(
+        normalized,
+        fieldName: fieldName,
+        maxLength: maxLength,
+        allowLineBreaks: allowLineBreaks,
+      );
+    } on InputValidationException catch (error) {
+      throw CsvImportFormatException(
+        'Row $rowNumber has an invalid $fieldName: ${error.message}',
+      );
+    }
+  }
 
   void _validateCsvSyntax(String source) {
     var inQuotes = false;
@@ -302,6 +375,8 @@ class CsvImportParser {
     final format = RegExp(r'^\d{4}-\d{2}-\d{2}$');
     final date = format.hasMatch(value) ? DateTime.tryParse(value) : null;
     if (date == null ||
+        date.year < entryDateMinYear ||
+        date.year > entryDateMaxYear ||
         date.year.toString().padLeft(4, '0') != value.substring(0, 4) ||
         date.month.toString().padLeft(2, '0') != value.substring(5, 7) ||
         date.day.toString().padLeft(2, '0') != value.substring(8, 10)) {

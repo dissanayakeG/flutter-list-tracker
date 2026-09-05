@@ -2,10 +2,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:list_tracker/data/local/app_database.dart';
 import 'package:list_tracker/data/repository/repository_providers.dart';
+import 'package:list_tracker/data/repository/repository_validation.dart';
 import 'package:list_tracker/ui/lists/widgets/list_category_dropdown.dart';
 
 const _formMaxWidth = 640.0;
@@ -130,11 +132,24 @@ class _EditListFormState extends ConsumerState<_EditListForm> {
                     controller: _listNameController,
                     enabled: !_isSaving,
                     textCapitalization: TextCapitalization.sentences,
+                    maxLength: listNameMaxLength,
+                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                    buildCounter: (
+                      _, {
+                      required currentLength,
+                      required maxLength,
+                      required isFocused,
+                    }) => null,
                     decoration: const InputDecoration(
                       labelText: 'List Name',
                       border: OutlineInputBorder(),
                     ),
-                    validator: _requiredTextValidator,
+                    validator: (value) => validateRequiredText(
+                      value: value,
+                      label: 'list name',
+                      fieldName: 'list name',
+                      maxLength: listNameMaxLength,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -143,10 +158,25 @@ class _EditListFormState extends ConsumerState<_EditListForm> {
                     enabled: !_isSaving,
                     textCapitalization: TextCapitalization.sentences,
                     maxLines: 3,
+                    maxLength: listNoteMaxLength,
+                    maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                    buildCounter: (
+                      _, {
+                      required currentLength,
+                      required maxLength,
+                      required isFocused,
+                    }) => null,
                     decoration: const InputDecoration(
                       labelText: 'Note (optional)',
                       alignLabelWithHint: true,
                       border: OutlineInputBorder(),
+                    ),
+                    validator: (value) => validateOptionalText(
+                      value: value,
+                      label: 'note',
+                      fieldName: 'note',
+                      maxLength: listNoteMaxLength,
+                      allowLineBreaks: true,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -203,12 +233,6 @@ class _EditListFormState extends ConsumerState<_EditListForm> {
         );
       }
     }
-  }
-
-  String? _requiredTextValidator(String? value) {
-    return value == null || value.trim().isEmpty
-        ? 'This field is required.'
-        : null;
   }
 }
 

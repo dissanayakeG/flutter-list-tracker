@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:list_tracker/data/repository/repository_validation.dart';
 
 /// The shared input and validation surface used by the Add and Edit entry
 /// flows. Route pages supply only their copy and persistence action.
@@ -71,14 +73,26 @@ class _EntryFormState extends State<EntryForm> {
             textCapitalization: TextCapitalization.sentences,
             minLines: 3,
             maxLines: 6,
+            maxLength: entryContentMaxLength,
+            maxLengthEnforcement: MaxLengthEnforcement.enforced,
+            buildCounter: (
+              _, {
+              required currentLength,
+              required maxLength,
+              required isFocused,
+            }) => null,
             decoration: const InputDecoration(
               labelText: 'Entry',
               alignLabelWithHint: true,
               border: OutlineInputBorder(),
             ),
-            validator: (value) => value == null || value.trim().isEmpty
-                ? 'Enter an entry.'
-                : null,
+            validator: (value) => validateRequiredText(
+              value: value,
+              label: 'entry',
+              fieldName: 'entry',
+              maxLength: entryContentMaxLength,
+              allowLineBreaks: true,
+            ),
           ),
           const SizedBox(height: 16),
           _EntryDateField(

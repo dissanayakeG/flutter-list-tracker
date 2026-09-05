@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../local/app_database.dart';
 import '../transfer/csv_import_models.dart';
 import '../transfer/export_snapshot.dart';
+import 'repository_validation.dart';
 
 abstract interface class TransferRepository {
   Future<ListTrackerExportSnapshot> getExportSnapshot();
@@ -125,6 +126,7 @@ class DriftTransferRepository implements TransferRepository {
   Future<_CsvImportResolution> _resolveCsvImport(
     CsvImportDocument document,
   ) async {
+    _validateCsvDocument(document);
     final categoryRows = await _database.select(_database.categories).get();
     final listRows = await _database.select(_database.listModels).get();
     final categoriesByName = {
@@ -224,6 +226,71 @@ class DriftTransferRepository implements TransferRepository {
       return categoryComparison;
     }
     return first.listName.compareTo(second.listName);
+  }
+
+  void _validateCsvDocument(CsvImportDocument document) {
+    if (document.entries.length > maxCsvImportDataRows) {
+      throw const CsvImportFormatException(
+        'The CSV file contains too many data rows. The maximum is 10,000.',
+      );
+    }
+
+    for (final categoryName in document.categoryNames) {
+      _validateRequiredImportText(
+        categoryName,
+        fieldName: 'category',
+        maxLength: categoryNameMaxLength,
+      );
+    }
+    for (final reference in document.listReferences) {
+      _validateRequiredImportText(
+        reference.categoryName,
+        fieldName: 'category',
+        maxLength: categoryNameMaxLength,
+      );
+      _validateRequiredImportText(
+        reference.listName,
+        fieldName: 'list',
+        maxLength: listNameMaxLength,
+      );
+    }
+    for (final entry in document.entries) {
+      _validateRequiredImportText(
+        entry.content,
+        fieldName: 'entry',
+        maxLength: entryContentMaxLength,
+        allowLineBreaks: true,
+      );
+      if (entry.date != null) {
+        try {
+          dateOnly(entry.date);
+        } on ArgumentError catch (error) {
+          throw CsvImportFormatException(
+            error.message?.toString() ?? 'Invalid date.',
+          );
+        }
+      }
+    }
+  }
+
+  void _validateRequiredImportText(
+    String value, {
+    required String fieldName,
+    required int maxLength,
+    bool allowLineBreaks = false,
+  }) {
+    try {
+      normalizeRequiredText(
+        value,
+        fieldName: fieldName,
+        maxLength: maxLength,
+        allowLineBreaks: allowLineBreaks,
+      );
+    } on InputValidationException catch (error) {
+      throw CsvImportFormatException(
+        'The CSV document has an invalid $fieldName: ${error.message}',
+      );
+    }
   }
 }
 
