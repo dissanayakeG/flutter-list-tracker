@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:csv/csv.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:list_tracker/data/repository/list_tracker_repository.dart';
+import 'package:list_tracker/data/repository/transfer_repository.dart';
 import 'package:list_tracker/data/transfer/csv_export_service.dart';
 import 'package:list_tracker/data/transfer/csv_import_models.dart';
 import 'package:list_tracker/data/transfer/csv_import_service.dart';
@@ -233,7 +233,7 @@ class _BytesGateway implements CsvFileOpenGateway {
   Future<Uint8List?> openCsv() async => bytes;
 }
 
-class _ImportRepository implements ListTrackerRepository {
+class _ImportRepository implements TransferRepository {
   _ImportRepository({
     this.preview = const CsvImportPreview(
       missingCategories: [],

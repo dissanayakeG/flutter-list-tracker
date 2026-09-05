@@ -9,7 +9,7 @@ final csvFileOpenGatewayProvider = Provider<CsvFileOpenGateway>((ref) {
 
 final csvImportServiceProvider = Provider<CsvImportService>((ref) {
   return RepositoryCsvImportService(
-    repository: ref.watch(listTrackerRepositoryProvider),
+    repository: ref.watch(transferRepositoryProvider),
     fileOpenGateway: ref.watch(csvFileOpenGatewayProvider),
   );
 });

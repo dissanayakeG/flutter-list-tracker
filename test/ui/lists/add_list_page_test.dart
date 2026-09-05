@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/data/repository/list_tracker_repository.dart';
+import 'package:list_tracker/data/repository/category_repository.dart';
+import 'package:list_tracker/data/repository/list_repository.dart';
 import 'package:list_tracker/data/repository/repository_providers.dart';
-import 'package:list_tracker/ui/add_list/add_list_page.dart';
+import 'package:list_tracker/ui/lists/pages/add_list_page.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {
@@ -33,6 +34,25 @@ void main() {
 
     await tester.tap(find.text('Existing'));
     await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<InputDecorator>(
+            find.byKey(const ValueKey('existing-category-input')),
+          )
+          .isEmpty,
+      isFalse,
+    );
+
+    expect(
+      tester
+          .widget<DropdownButton<int>>(
+            find.byKey(const ValueKey('existing-category-dropdown')),
+          )
+          .menuWidth,
+      280,
+    );
+
     await tester.tap(find.byKey(const ValueKey('existing-category-dropdown')));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Reading').last);
@@ -76,12 +96,111 @@ void main() {
     expect(repository.newCategoryRequest, ('Meal Plans', 'Weekday meals', ''));
     expect(find.text('Dashboard'), findsOneWidget);
   });
+
+  testWidgets('aligns the category selector with form fields', (tester) async {
+    const reading = Category(
+      id: 1,
+      externalId: 'reading-category',
+      name: 'Reading',
+    );
+    await _pumpAddListPage(
+      tester,
+      _RecordingRepository(categories: const [reading]),
+    );
+
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('category-mode-selector')))
+          .width,
+      tester.getSize(find.byKey(const ValueKey('new-category-field'))).width,
+    );
+  });
+
+  testWidgets('caps wide form content while keeping controls aligned', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1000, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const reading = Category(
+      id: 1,
+      externalId: 'reading-category',
+      name: 'Reading',
+    );
+    await _pumpAddListPage(
+      tester,
+      _RecordingRepository(categories: const [reading]),
+    );
+
+    final selectorWidth = tester
+        .getSize(find.byKey(const ValueKey('category-mode-selector')))
+        .width;
+    final fieldWidth = tester
+        .getSize(find.byKey(const ValueKey('new-category-field')))
+        .width;
+
+    expect(selectorWidth, fieldWidth);
+    expect(fieldWidth, closeTo(600, 0.1));
+  });
+
+  testWidgets('adapts category controls to narrow screens and large text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const reading = Category(
+      id: 1,
+      externalId: 'reading-category',
+      name: 'Reading',
+    );
+    await _pumpAddListPage(
+      tester,
+      _RecordingRepository(categories: const [reading]),
+      textScaler: TextScaler.linear(1.5),
+    );
+
+    expect(
+      tester
+          .widget<SegmentedButton>(
+            find.byKey(const ValueKey('category-mode-selector')),
+          )
+          .direction,
+      Axis.vertical,
+    );
+
+    await tester.tap(find.text('Existing'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(
+      tester
+          .widget<DropdownButton<int>>(
+            find.byKey(const ValueKey('existing-category-dropdown')),
+          )
+          .menuWidth,
+      280,
+    );
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('category-mode-selector')))
+          .width,
+      tester
+          .getSize(find.byKey(const ValueKey('existing-category-input')))
+          .width,
+    );
+  });
 }
 
 Future<void> _pumpAddListPage(
   WidgetTester tester,
-  ListTrackerRepository repository,
-) async {
+  _RecordingRepository repository, {
+  TextScaler textScaler = TextScaler.noScaling,
+}) async {
   final router = GoRouter(
     initialLocation: '/add-list',
     routes: [
@@ -96,14 +215,23 @@ Future<void> _pumpAddListPage(
 
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [listTrackerRepositoryProvider.overrideWithValue(repository)],
-      child: MaterialApp.router(routerConfig: router),
+      overrides: [
+        categoryRepositoryProvider.overrideWithValue(repository),
+        listRepositoryProvider.overrideWithValue(repository),
+      ],
+      child: MaterialApp.router(
+        routerConfig: router,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          child: child!,
+        ),
+      ),
     ),
   );
   await tester.pumpAndSettle();
 }
 
-class _RecordingRepository implements ListTrackerRepository {
+class _RecordingRepository implements CategoryRepository, ListRepository {
   _RecordingRepository({List<Category> categories = const []})
     : _categories = List.unmodifiable(categories);
 

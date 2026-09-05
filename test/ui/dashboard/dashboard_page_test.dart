@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/data/repository/list_tracker_repository.dart';
+import 'package:list_tracker/data/repository/category_repository.dart';
+import 'package:list_tracker/data/repository/list_repository.dart';
 import 'package:list_tracker/data/repository/repository_providers.dart';
 import 'package:list_tracker/data/transfer/csv_export_providers.dart';
 import 'package:list_tracker/data/transfer/csv_export_service.dart';
@@ -13,6 +14,42 @@ import 'package:list_tracker/main.dart';
 import 'package:list_tracker/ui/dashboard/dashboard_page.dart';
 
 void main() {
+  testWidgets('renders on a narrow display with large system text', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const category = Category(
+      id: 1,
+      externalId: 'meal-category',
+      name: 'Meal Plans',
+    );
+    final repository = _FakeRepository(categories: const [category]);
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(repository),
+          listRepositoryProvider.overrideWithValue(repository),
+        ],
+        child: MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context)
+                .copyWith(textScaler: TextScaler.linear(1.5)),
+            child: child!,
+          ),
+          home: const DashboardPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('shows list cards and filters them by category', (tester) async {
     const meals = Category(
       id: 1,
@@ -53,7 +90,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(repository),
+          categoryRepositoryProvider.overrideWithValue(repository),
+          listRepositoryProvider.overrideWithValue(repository),
         ],
         child: const MaterialApp(home: DashboardPage()),
       ),
@@ -70,6 +108,83 @@ void main() {
     expect(find.text('Weekday meals'), findsNothing);
   });
 
+  testWidgets('cancels list deletion from the confirmation dialog', (
+    tester,
+  ) async {
+    final repository = _FakeRepository(summaries: [_summary()]);
+
+    await _pumpDashboard(tester, repository);
+
+    await tester.tap(find.byTooltip('Delete list'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete “Weekday meals”?'), findsOneWidget);
+    expect(
+      find.text(
+        'This permanently deletes the list and every entry in it. '
+        'This action cannot be undone.',
+      ),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(repository.deletedListIds, isEmpty);
+  });
+
+  testWidgets(
+    'deletes a confirmed list with theme-derived destructive colors',
+    (tester) async {
+      final repository = _FakeRepository(summaries: [_summary()]);
+
+      await _pumpDashboard(tester, repository);
+
+      final colors = Theme.of(tester.element(find.byType(DashboardPage)))
+          .colorScheme;
+      final deleteIcon = tester.widget<IconButton>(
+        find.ancestor(
+          of: find.byTooltip('Delete list'),
+          matching: find.byType(IconButton),
+        ),
+      );
+      expect(deleteIcon.style!.foregroundColor!.resolve({}), colors.error);
+
+      await tester.tap(find.byTooltip('Delete list'));
+      await tester.pumpAndSettle();
+
+      final deleteButton = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'Delete'),
+      );
+      expect(deleteButton.style!.backgroundColor!.resolve({}), colors.error);
+      expect(deleteButton.style!.foregroundColor!.resolve({}), colors.onError);
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+      await tester.pumpAndSettle();
+
+      expect(repository.deletedListIds, [1]);
+      expect(find.text('List deleted.'), findsOneWidget);
+    },
+  );
+
+  testWidgets('reports an unsuccessful list deletion', (tester) async {
+    final repository = _FakeRepository(
+      summaries: [_summary()],
+      deleteListResult: false,
+    );
+
+    await _pumpDashboard(tester, repository);
+    await tester.tap(find.byTooltip('Delete list'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(repository.deletedListIds, [1]);
+    expect(
+      find.text('Unable to delete list. Please try again.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('shows an empty state and opens the Add New List form', (
     tester,
   ) async {
@@ -78,7 +193,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(repository),
+          categoryRepositoryProvider.overrideWithValue(repository),
+          listRepositoryProvider.overrideWithValue(repository),
         ],
         child: const ListTrackerApp(),
       ),
@@ -100,7 +216,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+          listRepositoryProvider.overrideWithValue(_FakeRepository()),
           csvExportServiceProvider.overrideWithValue(exporter),
         ],
         child: const MaterialApp(home: DashboardPage()),
@@ -121,7 +238,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+          listRepositoryProvider.overrideWithValue(_FakeRepository()),
           csvExportServiceProvider.overrideWithValue(cancelledExporter),
         ],
         child: const MaterialApp(home: DashboardPage()),
@@ -139,7 +257,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+          listRepositoryProvider.overrideWithValue(_FakeRepository()),
           csvExportServiceProvider.overrideWithValue(
             _ThrowingCsvExportService(),
           ),
@@ -166,7 +285,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+            categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+            listRepositoryProvider.overrideWithValue(_FakeRepository()),
             csvImportServiceProvider.overrideWithValue(importer),
           ],
           child: const MaterialApp(home: DashboardPage()),
@@ -191,7 +311,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+          listRepositoryProvider.overrideWithValue(_FakeRepository()),
           csvImportServiceProvider.overrideWithValue(importer),
         ],
         child: const MaterialApp(home: DashboardPage()),
@@ -225,7 +346,8 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+          categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+          listRepositoryProvider.overrideWithValue(_FakeRepository()),
           csvImportServiceProvider.overrideWithValue(importer),
         ],
         child: const MaterialApp(home: DashboardPage()),
@@ -250,7 +372,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+            categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+            listRepositoryProvider.overrideWithValue(_FakeRepository()),
             csvImportServiceProvider.overrideWithValue(importer),
           ],
           child: const MaterialApp(home: DashboardPage()),
@@ -288,7 +411,8 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            listTrackerRepositoryProvider.overrideWithValue(_FakeRepository()),
+            categoryRepositoryProvider.overrideWithValue(_FakeRepository()),
+            listRepositoryProvider.overrideWithValue(_FakeRepository()),
             csvImportServiceProvider.overrideWithValue(importer),
           ],
           child: const MaterialApp(home: DashboardPage()),
@@ -340,21 +464,64 @@ CsvImportReady _readyPreparation() {
   );
 }
 
-class _FakeRepository implements ListTrackerRepository {
+ListWithCategory _summary() {
+  const category = Category(
+    id: 1,
+    externalId: 'meal-category',
+    name: 'Meal Plans',
+  );
+  return ListWithCategory(
+    list: ListModel(
+      id: 1,
+      externalId: 'weekday-meals',
+      categoryId: category.id,
+      name: 'Weekday meals',
+      createdAt: DateTime(2026),
+    ),
+    category: category,
+  );
+}
+
+Future<void> _pumpDashboard(
+  WidgetTester tester,
+  _FakeRepository repository,
+) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        categoryRepositoryProvider.overrideWithValue(repository),
+        listRepositoryProvider.overrideWithValue(repository),
+      ],
+      child: const MaterialApp(home: DashboardPage()),
+    ),
+  );
+  await tester.pumpAndSettle();
+}
+
+class _FakeRepository implements CategoryRepository, ListRepository {
   _FakeRepository({
     List<Category> categories = const [],
     List<ListWithCategory> summaries = const [],
+    this.deleteListResult = true,
   }) : _categories = List.unmodifiable(categories),
        _summaries = List.unmodifiable(summaries);
 
   final List<Category> _categories;
   final List<ListWithCategory> _summaries;
+  final bool deleteListResult;
+  final deletedListIds = <int>[];
 
   @override
   Stream<List<Category>> watchCategories() => Stream.value(_categories);
 
   @override
   Stream<List<ListWithCategory>> watchLists() => Stream.value(_summaries);
+
+  @override
+  Future<bool> deleteList(int id) async {
+    deletedListIds.add(id);
+    return deleteListResult;
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
