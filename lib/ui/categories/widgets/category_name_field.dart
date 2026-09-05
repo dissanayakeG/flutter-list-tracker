@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:list_tracker/data/repository/repository_validation.dart';
 
 class CategoryNameField extends StatelessWidget {
   const CategoryNameField({
@@ -22,13 +24,24 @@ class CategoryNameField extends StatelessWidget {
       enabled: enabled,
       textCapitalization: TextCapitalization.words,
       autofocus: autofocus,
+      maxLength: categoryNameMaxLength,
+      maxLengthEnforcement: MaxLengthEnforcement.enforced,
+      buildCounter: (
+        _, {
+        required currentLength,
+        required maxLength,
+        required isFocused,
+      }) => null,
       decoration: const InputDecoration(
         labelText: 'Category Name',
         border: OutlineInputBorder(),
       ),
-      validator: (value) => value == null || value.trim().isEmpty
-          ? 'Enter a category name.'
-          : null,
+      validator: (value) => validateRequiredText(
+        value: value,
+        label: 'category name',
+        fieldName: 'category name',
+        maxLength: categoryNameMaxLength,
+      ),
     );
   }
 }

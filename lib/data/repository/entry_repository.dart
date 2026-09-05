@@ -42,7 +42,12 @@ class DriftEntryRepository implements EntryRepository {
         .insert(
           EntriesCompanion.insert(
             listId: listId,
-            content: requiredText(content, 'content'),
+            content: requiredText(
+              content,
+              'content',
+              maxLength: entryContentMaxLength,
+              allowLineBreaks: true,
+            ),
             date: Value(dateOnly(date)),
           ),
         );
@@ -62,7 +67,14 @@ class DriftEntryRepository implements EntryRepository {
           _database.entries,
         )..where((table) => table.id.equals(id))).write(
           EntriesCompanion(
-            content: Value(requiredText(content, 'content')),
+            content: Value(
+              requiredText(
+                content,
+                'content',
+                maxLength: entryContentMaxLength,
+                allowLineBreaks: true,
+              ),
+            ),
             date: Value(dateOnly(date)),
             updatedAt: Value(DateTime.now()),
           ),

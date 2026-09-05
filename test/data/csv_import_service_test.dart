@@ -114,6 +114,52 @@ void main() {
     );
   });
 
+  test('rejects unsafe or oversized CSV fields with source row feedback', () {
+    expectInvalidCsv(
+      parser,
+      _encode([
+        csvHeader,
+        ['Reading\u0000', 'Books', 'Read a chapter', ''],
+      ]),
+      'Row 2 has an invalid category',
+    );
+    expectInvalidCsv(
+      parser,
+      _encode([
+        csvHeader,
+        ['Reading', 'a' * 201, '', ''],
+      ]),
+      'Row 2 has an invalid list',
+    );
+    expectInvalidCsv(
+      parser,
+      _encode([
+        csvHeader,
+        ['Reading', 'Books', 'a' * 5001, ''],
+      ]),
+      'Row 2 has an invalid entry',
+    );
+  });
+
+  test(
+    'rejects CSV files over the byte limit before repository access',
+    () async {
+      final repository = _ImportRepository();
+      final service = RepositoryCsvImportService(
+        repository: repository,
+        fileOpenGateway: _BytesGateway(
+          Uint8List.fromList(List.filled(maxCsvImportBytes + 1, 0x20)),
+        ),
+      );
+
+      final preparation = await service.prepare();
+
+      expect(preparation, isA<CsvImportInvalid>());
+      expect((preparation as CsvImportInvalid).message, contains('too large'));
+      expect(repository.previewRequests, 0);
+    },
+  );
+
   test('preparation treats a cancelled file picker as a no-op', () async {
     final repository = _ImportRepository();
     final service = RepositoryCsvImportService(

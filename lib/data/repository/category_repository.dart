@@ -41,7 +41,11 @@ class DriftCategoryRepository implements CategoryRepository {
 
   @override
   Future<Category> createOrGetCategory({required String name}) {
-    final normalizedName = requiredText(name, 'name');
+    final normalizedName = requiredText(
+      name,
+      'name',
+      maxLength: categoryNameMaxLength,
+    );
 
     return _database.transaction(() async {
       final existing = await (_database.select(
@@ -66,7 +70,11 @@ class DriftCategoryRepository implements CategoryRepository {
         await (_database.update(
           _database.categories,
         )..where((table) => table.id.equals(id))).write(
-          CategoriesCompanion(name: Value(requiredText(name, 'name'))),
+          CategoriesCompanion(
+            name: Value(
+              requiredText(name, 'name', maxLength: categoryNameMaxLength),
+            ),
+          ),
         );
     return updatedRows == 1;
   }

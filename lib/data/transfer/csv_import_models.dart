@@ -1,3 +1,6 @@
+const maxCsvImportBytes = 5 * 1024 * 1024;
+const maxCsvImportDataRows = 10000;
+
 class CsvListReference {
   const CsvListReference({required this.categoryName, required this.listName});
 
