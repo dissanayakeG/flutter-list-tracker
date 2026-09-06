@@ -12,6 +12,9 @@ if (signingPropertiesFile.exists()) {
     signingPropertiesFile.inputStream().use(signingProperties::load)
 }
 
+val allowDebugReleaseSigning = providers.gradleProperty("allowDebugReleaseSigning")
+    .map(String::toBoolean)
+    .getOrElse(false)
 val releaseTaskRequested = gradle.startParameter.taskNames.any {
     it.contains("release", ignoreCase = true)
 }
@@ -25,7 +28,11 @@ val missingSigningProperties = requiredSigningProperties.filter {
     signingProperties.getProperty(it).isNullOrBlank()
 }
 
-if (releaseTaskRequested && missingSigningProperties.isNotEmpty()) {
+if (
+    releaseTaskRequested &&
+    missingSigningProperties.isNotEmpty() &&
+    !allowDebugReleaseSigning
+) {
     throw GradleException(
         "A production release requires android/key.properties with: " +
             missingSigningProperties.joinToString(", ") + ".",
@@ -70,7 +77,11 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (allowDebugReleaseSigning) {
+                signingConfigs.getByName("debug")
+            } else {
+                signingConfigs.getByName("release")
+            }
         }
     }
 }

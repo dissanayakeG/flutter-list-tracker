@@ -30,6 +30,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/icons/list_tracker.svg
+    - assets/icons/list_tracker.png
 
 
 flutter_launcher_icons:
