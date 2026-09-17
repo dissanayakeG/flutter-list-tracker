@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:list_tracker/data/repository/repository_validation.dart';
+import 'package:list_tracker/core/validation/repository_validation.dart';
 
 void main() {
   test('accepts Unicode, punctuation, and SQL-like text as data', () {

@@ -1,8 +1,8 @@
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/data/repository/category_repository.dart';
-import 'package:list_tracker/data/repository/list_repository.dart';
+import 'package:list_tracker/core/database/app_database.dart';
+import 'package:list_tracker/features/lists/data/repositories/category_repository.dart';
+import 'package:list_tracker/features/lists/data/repositories/list_repository.dart';
 
 void main() {
   late AppDatabase database;

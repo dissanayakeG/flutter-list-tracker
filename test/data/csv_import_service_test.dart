@@ -3,10 +3,10 @@ import 'dart:typed_data';
 
 import 'package:csv/csv.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:list_tracker/data/repository/transfer_repository.dart';
-import 'package:list_tracker/data/transfer/csv_export_service.dart';
-import 'package:list_tracker/data/transfer/csv_import_models.dart';
-import 'package:list_tracker/data/transfer/csv_import_service.dart';
+import 'package:list_tracker/features/lists/data/repositories/transfer_repository.dart';
+import 'package:list_tracker/features/lists/data/transfer/csv_export_service.dart';
+import 'package:list_tracker/features/lists/data/transfer/csv_import_models.dart';
+import 'package:list_tracker/features/lists/data/transfer/csv_import_service.dart';
 
 void main() {
   const parser = CsvImportParser();

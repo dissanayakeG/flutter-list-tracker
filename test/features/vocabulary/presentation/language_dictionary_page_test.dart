@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:list_tracker/data/local/app_database.dart';
+import 'package:list_tracker/core/database/app_database.dart';
 import 'package:list_tracker/features/vocabulary/data/vocabulary_providers.dart';
 import 'package:list_tracker/features/vocabulary/data/vocabulary_repository.dart';
 import 'package:list_tracker/features/vocabulary/presentation/pages/language_pages.dart';

@@ -1,5 +1,5 @@
 import 'package:csv/csv.dart';
-import 'package:list_tracker/data/repository/repository_validation.dart';
+import 'package:list_tracker/core/validation/repository_validation.dart';
 
 class VocabularyWordDraft {
   const VocabularyWordDraft({required this.word, required this.meaning});

@@ -1,16 +1,16 @@
 import 'package:go_router/go_router.dart';
-import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/ui/categories/pages/add_category_page.dart';
-import 'package:list_tracker/ui/categories/pages/categories_page.dart';
-import 'package:list_tracker/ui/categories/pages/edit_category_page.dart';
-import 'package:list_tracker/ui/entries/pages/add_entry_page.dart';
-import 'package:list_tracker/ui/entries/pages/edit_entry_page.dart';
-import 'package:list_tracker/ui/lists/pages/add_list_page.dart';
-import 'package:list_tracker/ui/lists/pages/edit_list_page.dart';
-import 'package:list_tracker/ui/lists/pages/list_detail_page.dart';
+import 'package:list_tracker/core/database/app_database.dart';
+import 'package:list_tracker/features/lists/presentation/categories/pages/add_category_page.dart';
+import 'package:list_tracker/features/lists/presentation/categories/pages/categories_page.dart';
+import 'package:list_tracker/features/lists/presentation/categories/pages/edit_category_page.dart';
+import 'package:list_tracker/features/lists/presentation/entries/pages/add_entry_page.dart';
+import 'package:list_tracker/features/lists/presentation/entries/pages/edit_entry_page.dart';
+import 'package:list_tracker/features/lists/presentation/lists/pages/add_list_page.dart';
+import 'package:list_tracker/features/lists/presentation/lists/pages/edit_list_page.dart';
+import 'package:list_tracker/features/lists/presentation/lists/pages/list_detail_page.dart';
 import 'package:list_tracker/features/vocabulary/data/vocabulary_repository.dart';
 import 'package:list_tracker/features/vocabulary/presentation/pages/language_pages.dart';
-import 'package:list_tracker/ui/navigation/main_navigation_page.dart';
+import 'package:list_tracker/app/navigation/main_navigation_page.dart';
 
 class AppRouter {
   AppRouter._();

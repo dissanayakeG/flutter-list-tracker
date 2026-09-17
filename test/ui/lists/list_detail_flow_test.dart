@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/data/repository/category_repository.dart';
-import 'package:list_tracker/data/repository/entry_repository.dart';
-import 'package:list_tracker/data/repository/list_repository.dart';
-import 'package:list_tracker/data/repository/repository_providers.dart';
-import 'package:list_tracker/ui/dashboard/dashboard_page.dart';
-import 'package:list_tracker/ui/entries/pages/add_entry_page.dart';
-import 'package:list_tracker/ui/lists/pages/list_detail_page.dart';
+import 'package:list_tracker/core/database/app_database.dart';
+import 'package:list_tracker/features/lists/data/repositories/category_repository.dart';
+import 'package:list_tracker/features/lists/data/repositories/entry_repository.dart';
+import 'package:list_tracker/features/lists/data/repositories/list_repository.dart';
+import 'package:list_tracker/features/lists/data/repositories/repository_providers.dart';
+import 'package:list_tracker/features/lists/presentation/dashboard/dashboard_page.dart';
+import 'package:list_tracker/features/lists/presentation/entries/pages/add_entry_page.dart';
+import 'package:list_tracker/features/lists/presentation/lists/pages/list_detail_page.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {

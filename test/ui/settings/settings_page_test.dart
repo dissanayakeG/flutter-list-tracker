@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:list_tracker/data/transfer/csv_export_providers.dart';
-import 'package:list_tracker/data/transfer/csv_export_service.dart';
-import 'package:list_tracker/ui/settings/settings_page.dart';
+import 'package:list_tracker/features/lists/data/transfer/csv_export_providers.dart';
+import 'package:list_tracker/features/lists/data/transfer/csv_export_service.dart';
+import 'package:list_tracker/features/settings/presentation/settings_page.dart';
 
 void main() {
   testWidgets('updates the shared theme mode when a selection changes', (

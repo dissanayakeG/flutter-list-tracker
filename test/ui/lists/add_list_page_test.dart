@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/data/repository/category_repository.dart';
-import 'package:list_tracker/data/repository/list_repository.dart';
-import 'package:list_tracker/data/repository/repository_providers.dart';
-import 'package:list_tracker/ui/lists/pages/add_list_page.dart';
+import 'package:list_tracker/core/database/app_database.dart';
+import 'package:list_tracker/features/lists/data/repositories/category_repository.dart';
+import 'package:list_tracker/features/lists/data/repositories/list_repository.dart';
+import 'package:list_tracker/features/lists/data/repositories/repository_providers.dart';
+import 'package:list_tracker/features/lists/presentation/lists/pages/add_list_page.dart';
 import 'package:go_router/go_router.dart';
 
 void main() {

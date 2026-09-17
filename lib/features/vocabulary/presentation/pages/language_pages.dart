@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:list_tracker/data/local/app_database.dart';
-import 'package:list_tracker/data/repository/repository_validation.dart';
+import 'package:list_tracker/core/database/app_database.dart';
+import 'package:list_tracker/core/validation/repository_validation.dart';
 import 'package:list_tracker/features/vocabulary/data/vocabulary_batch_parser.dart';
 import 'package:list_tracker/features/vocabulary/data/vocabulary_providers.dart';
 import 'package:list_tracker/features/vocabulary/data/vocabulary_repository.dart';
