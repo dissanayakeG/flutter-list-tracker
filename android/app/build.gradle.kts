@@ -1,42 +1,7 @@
-import java.util.Properties
-
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
-}
-
-val signingPropertiesFile = rootProject.file("key.properties")
-val signingProperties = Properties()
-if (signingPropertiesFile.exists()) {
-    signingPropertiesFile.inputStream().use(signingProperties::load)
-}
-
-val allowDebugReleaseSigning = providers.gradleProperty("allowDebugReleaseSigning")
-    .map(String::toBoolean)
-    .getOrElse(false)
-val releaseTaskRequested = gradle.startParameter.taskNames.any {
-    it.contains("release", ignoreCase = true)
-}
-val requiredSigningProperties = listOf(
-    "storePassword",
-    "keyPassword",
-    "keyAlias",
-    "storeFile",
-)
-val missingSigningProperties = requiredSigningProperties.filter {
-    signingProperties.getProperty(it).isNullOrBlank()
-}
-
-if (
-    releaseTaskRequested &&
-    missingSigningProperties.isNotEmpty() &&
-    !allowDebugReleaseSigning
-) {
-    throw GradleException(
-        "A production release requires android/key.properties with: " +
-            missingSigningProperties.joinToString(", ") + ".",
-    )
 }
 
 android {
@@ -64,24 +29,12 @@ android {
         versionName = flutter.versionName
     }
 
-    signingConfigs {
-        create("release") {
-            keyAlias = signingProperties.getProperty("keyAlias")
-            keyPassword = signingProperties.getProperty("keyPassword")
-            storeFile = signingProperties.getProperty("storeFile")?.let(
-                rootProject::file,
-            )
-            storePassword = signingProperties.getProperty("storePassword")
-        }
-    }
-
     buildTypes {
         release {
-            signingConfig = if (allowDebugReleaseSigning) {
-                signingConfigs.getByName("debug")
-            } else {
-                signingConfigs.getByName("release")
-            }
+            // Local release-mode smoke builds are debug-signed until Phase 14
+            // adds a protected production upload-key configuration. These APKs
+            // must never be distributed to users or app stores.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 }

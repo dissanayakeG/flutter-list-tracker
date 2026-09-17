@@ -7,12 +7,12 @@ import '../../data/transfer/csv_import_models.dart';
 import '../../data/transfer/csv_import_providers.dart';
 import '../../data/transfer/csv_import_service.dart';
 
-/// Coordinates Dashboard-only CSV dialogs, feedback, and busy indicators.
+/// Coordinates Settings-owned List CSV dialogs, feedback, and busy indicators.
 ///
 /// CSV parsing, encoding, and persistence remain in the transfer layer. This
-/// object keeps presentation orchestration out of [DashboardPage].
-class DashboardTransferActions {
-  const DashboardTransferActions({
+/// object keeps presentation orchestration out of [SettingsPage].
+class ListTransferActions {
+  const ListTransferActions({
     required this.context,
     required this.ref,
     required this.onImportingChanged,

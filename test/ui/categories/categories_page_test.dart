@@ -19,11 +19,13 @@ void main() {
     final repository = _CategoryRepository();
     addTearDown(repository.dispose);
 
-    await _pumpCategoryFlow(tester, repository: repository);
+    await _pumpCategoryFlow(
+      tester,
+      repository: repository,
+      initialLocation: '/settings',
+    );
 
-    await tester.tap(find.byTooltip('Settings'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Categories'));
+    await tester.tap(find.text('Manage list categories'));
     await tester.pumpAndSettle();
 
     expect(find.text('Categories'), findsOneWidget);

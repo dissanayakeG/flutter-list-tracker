@@ -125,6 +125,9 @@ void main() {
     final newCategory = await (database.select(
       database.categories,
     )..where((table) => table.id.equals(newCategoryId))).getSingle();
+    final vocabularyTables = await database
+        .customSelect("SELECT name FROM sqlite_master WHERE type = 'table'")
+        .get();
 
     _expectUuid(category.externalId);
     _expectUuid(list.externalId);
@@ -139,7 +142,90 @@ void main() {
       }.length,
       4,
     );
+    expect(
+      vocabularyTables.map((row) => row.data['name']),
+      containsAll([
+        'languages',
+        'vocabulary_categories',
+        'vocabulary_subcategories',
+        'vocabulary_words',
+      ]),
+    );
   });
+
+  test(
+    'migrates version 3 List data while adding empty vocabulary tables',
+    () async {
+      final rawDatabase = sqlite3.openInMemory();
+      rawDatabase.execute('''
+      CREATE TABLE categories (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        external_id TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL UNIQUE
+      )
+    ''');
+      rawDatabase.execute('''
+      CREATE TABLE list_models (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        external_id TEXT NOT NULL UNIQUE,
+        category_id INTEGER NOT NULL,
+        name TEXT NOT NULL,
+        note TEXT,
+        created_at INTEGER NOT NULL
+      )
+    ''');
+      rawDatabase.execute('''
+      CREATE TABLE entries (
+        id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+        external_id TEXT NOT NULL UNIQUE,
+        list_id INTEGER NOT NULL,
+        content TEXT NOT NULL,
+        date INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER NOT NULL
+      )
+    ''');
+      rawDatabase.execute('''
+      INSERT INTO categories (id, external_id, name)
+      VALUES (1, '11111111-1111-4111-8111-111111111111', 'Reading')
+    ''');
+      rawDatabase.execute('''
+      INSERT INTO list_models (id, external_id, category_id, name, note, created_at)
+      VALUES (1, '22222222-2222-4222-8222-222222222222', 1, 'Books', NULL, 0)
+    ''');
+      rawDatabase.execute('''
+      INSERT INTO entries (id, external_id, list_id, content, date, created_at, updated_at)
+      VALUES (1, '33333333-3333-4333-8333-333333333333', 1, 'Read a chapter', NULL, 0, 0)
+    ''');
+      rawDatabase.execute('PRAGMA user_version = 3');
+
+      final database = AppDatabase(NativeDatabase.opened(rawDatabase));
+      addTearDown(database.close);
+
+      expect(
+        (await database.select(database.categories).getSingle()).name,
+        'Reading',
+      );
+      expect(
+        (await database.select(database.listModels).getSingle()).name,
+        'Books',
+      );
+      expect(
+        (await database.select(database.entries).getSingle()).content,
+        'Read a chapter',
+      );
+      expect(await database.select(database.languages).get(), isEmpty);
+      expect(
+        await database.select(database.vocabularyCategories).get(),
+        isEmpty,
+      );
+      expect(
+        await database.select(database.vocabularySubcategories).get(),
+        isEmpty,
+      );
+      expect(await database.select(database.vocabularyWords).get(), isEmpty);
+    },
+  );
 }
 
 void _expectUuid(String value) {

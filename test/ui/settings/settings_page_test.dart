@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
+import 'package:list_tracker/data/transfer/csv_export_providers.dart';
+import 'package:list_tracker/data/transfer/csv_export_service.dart';
 import 'package:list_tracker/ui/settings/settings_page.dart';
 
 void main() {
@@ -18,19 +20,11 @@ void main() {
       ),
     );
 
-    final menu = tester.widget<PopupMenuButton<ThemeMode>>(
-      find.byKey(const ValueKey('theme-mode-menu')),
-    );
-    final colors = Theme.of(
-      tester.element(find.byKey(const ValueKey('theme-mode-menu'))),
-    ).colorScheme;
+    expect(find.byKey(const ValueKey('theme-choice-light')), findsOneWidget);
+    expect(find.byKey(const ValueKey('theme-choice-dark')), findsOneWidget);
+    expect(find.byKey(const ValueKey('theme-choice-system')), findsOneWidget);
 
-    expect(menu.color, colors.surfaceContainerHigh);
-    expect(menu.position, PopupMenuPosition.under);
-
-    await tester.tap(find.byKey(const ValueKey('theme-mode-menu')));
-    await tester.pumpAndSettle();
-    await tester.tap(find.byType(CheckedPopupMenuItem<ThemeMode>).first);
+    await tester.tap(find.byKey(const ValueKey('theme-choice-light')));
     await tester.pumpAndSettle();
 
     expect(container.read(appThemeModeProvider), ThemeMode.light);
@@ -88,9 +82,36 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Categories'));
+    await tester.tap(find.text('Manage list categories'));
     await tester.pumpAndSettle();
 
     expect(find.text('Category Management'), findsOneWidget);
   });
+
+  testWidgets('exports Lists from Settings', (tester) async {
+    final container = ProviderContainer(
+      overrides: [
+        csvExportServiceProvider.overrideWithValue(_FakeCsvExportService()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: const MaterialApp(home: SettingsPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Export lists'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('CSV exported.'), findsOneWidget);
+  });
+}
+
+class _FakeCsvExportService implements CsvExportService {
+  @override
+  Future<CsvExportResult> export() async => CsvExportResult.saved;
 }

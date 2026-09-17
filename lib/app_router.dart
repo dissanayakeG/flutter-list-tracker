@@ -8,16 +8,62 @@ import 'package:list_tracker/ui/entries/pages/edit_entry_page.dart';
 import 'package:list_tracker/ui/lists/pages/add_list_page.dart';
 import 'package:list_tracker/ui/lists/pages/edit_list_page.dart';
 import 'package:list_tracker/ui/lists/pages/list_detail_page.dart';
-import 'package:list_tracker/ui/settings/settings_page.dart';
-import 'package:list_tracker/ui/dashboard/dashboard_page.dart';
+import 'package:list_tracker/features/vocabulary/data/vocabulary_repository.dart';
+import 'package:list_tracker/features/vocabulary/presentation/pages/language_pages.dart';
+import 'package:list_tracker/ui/navigation/main_navigation_page.dart';
 
 class AppRouter {
   AppRouter._();
 
   static final GoRouter router = GoRouter(
     routes: [
-      GoRoute(path: '/', builder: (_, _) => const DashboardPage()),
-      GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
+      GoRoute(path: '/', builder: (_, _) => const MainNavigationPage()),
+      GoRoute(
+        path: '/languages',
+        builder: (_, _) => const MainNavigationPage(initialIndex: 2),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (_, _) => const MainNavigationPage(initialIndex: 3),
+      ),
+      GoRoute(
+        path: '/languages/add',
+        builder: (_, _) => const AddLanguagePage(),
+      ),
+      GoRoute(
+        path: '/languages/:languageId',
+        builder: (_, state) => LanguageDictionaryPage(
+          languageId: int.parse(state.pathParameters['languageId']!),
+        ),
+      ),
+      GoRoute(
+        path: '/languages/:languageId/edit',
+        builder: (_, state) => EditLanguagePage(
+          languageId: int.parse(state.pathParameters['languageId']!),
+        ),
+      ),
+      GoRoute(
+        path: '/languages/:languageId/add-words',
+        builder: (_, state) => AddWordsPage(
+          initialLanguageId: int.parse(state.pathParameters['languageId']!),
+        ),
+      ),
+      GoRoute(
+        path: '/languages/:languageId/words/:wordId/edit',
+        builder: (_, state) => EditVocabularyWordPage(
+          item: state.extra as VocabularyWordWithContext,
+        ),
+      ),
+      GoRoute(
+        path: '/language-categories',
+        builder: (_, _) => const VocabularyCategoryManagementPage(),
+      ),
+      GoRoute(
+        path: '/language-categories/:categoryId',
+        builder: (_, state) => VocabularySubcategoryManagementPage(
+          category: state.extra as VocabularyCategory,
+        ),
+      ),
       GoRoute(path: '/add-list', builder: (_, _) => const AddListPage()),
       GoRoute(path: '/categories', builder: (_, _) => const CategoriesPage()),
       GoRoute(

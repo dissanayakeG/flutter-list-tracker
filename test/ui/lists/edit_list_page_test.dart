@@ -49,16 +49,9 @@ void main() {
           .text,
       'This month',
     );
-    expect(
-      tester
-          .widget<DropdownButton<int>>(
-            find.byKey(const ValueKey('existing-category-dropdown')),
-          )
-          .value,
-      reading.id,
-    );
+    expect(find.text('Reading'), findsWidgets);
 
-    await tester.tap(find.byKey(const ValueKey('existing-category-dropdown')));
+    await tester.tap(find.text('Reading').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Plans').last);
     await tester.pumpAndSettle();

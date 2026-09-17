@@ -4,12 +4,16 @@ All notable user-facing changes to List Tracker are documented here.
 
 ## [Unreleased]
 
+- Added a local Vocabulary feature with language-scoped categories, optional
+  subcategories, dictionary views, completion/edit controls, and quoted batch
+  entry of word/meaning pairs.
+- Added Lists, Languages, and Settings bottom navigation. List CSV transfer
+  and List-category management now live in Settings.
 - CSV exports now protect spreadsheet-formula-looking values while preserving
   safe export/edit/import round trips and the readable four-column format.
-- Android release builds now require a private production signing configuration
-  instead of falling back to the debug key.
-- Public distribution remains blocked until a signed artifact, security-alert
-  review, and fresh-install/upgrade verification are recorded.
+- Local Android release-mode smoke builds are debug-signed. They are not
+  distribution artifacts; protected production signing and device verification
+  are scheduled for Phase 14.
 
 ## [0.1.0] - 2026-09-05
 

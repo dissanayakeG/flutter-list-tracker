@@ -4,6 +4,7 @@ import '../local/app_database.dart';
 import 'category_repository.dart';
 import 'entry_repository.dart';
 import 'list_repository.dart';
+import 'preference_repository.dart';
 import 'transfer_repository.dart';
 
 final appDatabaseProvider = Provider<AppDatabase>((ref) {
@@ -29,6 +30,10 @@ final entryRepositoryProvider = Provider<EntryRepository>((ref) {
 
 final transferRepositoryProvider = Provider<TransferRepository>((ref) {
   return DriftTransferRepository(ref.watch(appDatabaseProvider));
+});
+
+final preferenceRepositoryProvider = Provider<PreferenceRepository>((ref) {
+  return DriftPreferenceRepository(ref.watch(appDatabaseProvider));
 });
 
 final categoriesProvider = StreamProvider<List<Category>>((ref) {

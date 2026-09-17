@@ -36,24 +36,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      tester
-          .widget<InputDecorator>(
-            find.byKey(const ValueKey('existing-category-input')),
-          )
-          .isEmpty,
-      isFalse,
+      find.byKey(const ValueKey('existing-category-input')),
+      findsOneWidget,
     );
 
-    expect(
-      tester
-          .widget<DropdownButton<int>>(
-            find.byKey(const ValueKey('existing-category-dropdown')),
-          )
-          .menuWidth,
-      280,
-    );
-
-    await tester.tap(find.byKey(const ValueKey('existing-category-dropdown')));
+    await tester.tap(find.text('Choose a category').first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Reading').last);
     await tester.pumpAndSettle();
@@ -202,12 +189,8 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(
-      tester
-          .widget<DropdownButton<int>>(
-            find.byKey(const ValueKey('existing-category-dropdown')),
-          )
-          .menuWidth,
-      280,
+      find.byKey(const ValueKey('existing-category-input')),
+      findsOneWidget,
     );
     expect(
       tester

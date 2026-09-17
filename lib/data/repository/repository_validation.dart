@@ -2,6 +2,11 @@ const categoryNameMaxLength = 100;
 const listNameMaxLength = 200;
 const listNoteMaxLength = 2000;
 const entryContentMaxLength = 5000;
+const languageNameMaxLength = 100;
+const vocabularyCategoryNameMaxLength = 100;
+const vocabularySubcategoryNameMaxLength = 100;
+const vocabularyWordMaxLength = 300;
+const vocabularyMeaningMaxLength = 1000;
 const entryDateMinYear = 1900;
 const entryDateMaxYear = 2100;
 
